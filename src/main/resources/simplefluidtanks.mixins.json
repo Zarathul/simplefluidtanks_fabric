@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.zarathul.simplefluidtanks.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "BucketItemAccessor"
+  ],
+  "client": [
+  ],
+  "server": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

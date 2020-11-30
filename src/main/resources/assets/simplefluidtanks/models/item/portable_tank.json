@@ -1,0 +1,6 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "simplefluidtanks:item/portable_tank"
+  }
+}

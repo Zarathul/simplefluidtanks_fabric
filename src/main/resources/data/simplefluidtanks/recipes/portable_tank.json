@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ISI",
+    "ITI",
+    "GGG"
+  ],
+  "key": {
+    "I": {
+      "tag": "c:iron_ingots"
+    },
+    "S": {
+      "tag": "c:slime_balls"
+    },
+    "T": {
+      "item": "simplefluidtanks:tank"
+    },
+    "G": {
+      "tag": "c:gold_ingots"
+    }
+  },
+  "result": {
+    "item": "simplefluidtanks:portable_tank",
+    "count": 1
+  }
+}

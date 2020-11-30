@@ -1,0 +1,6 @@
+{
+  "ambientocclusion": true,
+  "textures": {
+    "particle": "simplefluidtanks:block/valve"
+  }
+}

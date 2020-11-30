@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "simplefluidtanks",
+  "version": "${version}",
+
+  "name": "Simple Fluid Tanks",
+  "description": "Adds fluid tanks of variable size and shape.",
+  "authors": [
+    "Zarathul"
+  ],
+  "contact": {
+    "homepage": "https://github.com/Zarathul/simplefluidtanks_fabric",
+    "sources": "https://github.com/Zarathul/simplefluidtanks_fabric"
+  },
+
+  "license": "MIT",
+  "icon": "assets/simplefluidtanks/logo.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.zarathul.simplefluidtanks.SimpleFluidTanks"
+    ],
+    "client": [
+      "net.zarathul.simplefluidtanks.ClienInit"
+    ]
+  },
+  "mixins": [
+    "simplefluidtanks.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.7.4",
+    "fabric": "*",
+    "minecraft": "1.16.x"
+  }
+}
