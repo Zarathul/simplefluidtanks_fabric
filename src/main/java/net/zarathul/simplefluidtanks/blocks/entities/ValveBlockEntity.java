@@ -5,13 +5,19 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
-import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
@@ -22,6 +28,7 @@ import net.zarathul.simplefluidtanks.common.Directions;
 import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplemods.api.fluid.FluidStack;
 import net.zarathul.simplemods.api.fluid.IFluidHandler;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -29,7 +36,7 @@ import java.util.Map.Entry;
 /**
  * Holds {@link BlockEntity} data for {@link ValveBlock}s,
  */
-public class ValveBlockEntity extends BlockEntity implements IFluidHandler, BlockEntityClientSerializable
+public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 {
 	/**
 	 * Holds the number of {@link TankBlock}s that are linked to this {@link ValveBlock}. 
@@ -78,9 +85,10 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 	 */
 	private Direction facing;
 
-	public ValveBlockEntity()
+	public ValveBlockEntity(final BlockPos pos, final BlockState state)
 	{
-		super(SimpleFluidTanks.entityValve);
+		super(SimpleFluidTanks.blockEntityTypeValve, pos, state);
+
 		tankPriorities = ArrayListMultimap.create();
 		tankFacingSides = -1;
 		linkedTankCount = 0;
@@ -96,44 +104,53 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 	private static final String TAG_FACING = "facing";
 
 	@Override
-	public CompoundTag save(CompoundTag tag)
+	protected void saveAdditional(ValueOutput output)
 	{
-		super.save(tag);
+		super.saveAdditional(output);
 
-		fluid.save(tag);
-		tag.putInt(TAG_FLUID_CAPACITY, capacity);
+		fluid.save(output);
+		output.putInt(TAG_FLUID_CAPACITY, capacity);
 
-		writeTankPrioritiesToNBT(tag);
-		tag.putByte(TAG_TANK_FACING_SIDES, tankFacingSides);
-		tag.putByte(TAG_FACING, (byte)facing.get3DDataValue());
-
-		return tag;
+		writeTankPrioritiesToNBT(output);
+		output.putByte(TAG_TANK_FACING_SIDES, tankFacingSides);
+		output.putByte(TAG_FACING, (byte)facing.get3DDataValue());
 	}
 
 	@Override
-	public void load(BlockState state, CompoundTag tag)
+	protected void loadAdditional(ValueInput input)
 	{
-		super.load(state, tag);
+		super.loadAdditional(input);
 
-		fluid.load(state, tag);
-		capacity = tag.getInt(TAG_FLUID_CAPACITY);
+		fluid.load(input);
+		capacity = input.getIntOr(TAG_FLUID_CAPACITY, 0);
 
-		readTankPrioritiesFromNBT(tag);
-		linkedTankCount = (tag.contains(TAG_LINKED_TANK_COUNT)) ? tag.getInt(TAG_LINKED_TANK_COUNT) : Math.max(tankPriorities.size() - 1, 0);
-		tankFacingSides = tag.getByte(TAG_TANK_FACING_SIDES);
-		facing = Direction.from3DDataValue(tag.getByte(TAG_FACING));
+		readTankPrioritiesFromNBT(input);
+		linkedTankCount = (input.contains(TAG_LINKED_TANK_COUNT)) ? input.getIntOr(TAG_LINKED_TANK_COUNT, 0) : Math.max(tankPriorities.size() - 1, 0);
+		tankFacingSides = input.getByteOr(TAG_TANK_FACING_SIDES, (byte)0);
+		facing = Direction.from3DDataValue(input.getByteOr(TAG_FACING, (byte)0));
 	}
 
 	@Override
-	public CompoundTag toClientTag(CompoundTag tag)
+	public CompoundTag getUpdateTag(HolderLookup.Provider registries)
 	{
-		return save(tag);
+		return saveWithoutMetadata(registries);
 	}
 
 	@Override
-	public void fromClientTag(CompoundTag tag)
+	public @Nullable Packet<ClientGamePacketListener> getUpdatePacket()
 	{
-		load(getBlockState(), tag);
+		return ClientboundBlockEntityDataPacket.create(this);
+	}
+
+	@Override
+	public void setChanged()
+	{
+		super.setChanged();
+
+		if (level == null) return;
+
+		BlockState state = getBlockState();
+		level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_ALL);
 	}
 
 	/**
@@ -159,6 +176,8 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 			this.facing = facing;
 		}
 	}
+
+	public byte getTankFacingSides() { return tankFacingSides; }
 
 	/**
 	 * Gets the amount of fluid in the multiblock tank.
@@ -297,7 +316,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 
 		if (!suppressBlockUpdates && (!worldPosition.equals(ignorePos)))
 		{
-			sync();
+//			sync();
 			setChanged();
 		}
 	}
@@ -326,7 +345,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 		setFluid(fluidBackup);
 		distributeFluidToTanks(true);
 
-		sync();
+//		sync();
 		setChanged();
 	}
 
@@ -352,14 +371,14 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 			}
 		}
 		
-		// This needs to be done after setting the valve. Otherwise the connected textures will be wrong.
+		// This needs to be done after setting the valve. Otherwise, the connected textures will be wrong.
 		for (TankBlockEntity tankEntity : tankEntities)
 		{
 			tankEntity.updateConnections();
 		}
 
 		// calculate and set the internal tanks capacity, note the " + 1" is needed because the ValveBlock itself is considered a tank with storage capacity
-		setCapacity((tankEntities.size() + 1) * Settings.bucketsPerTank * FluidStack.BUCKET_VOLUME);
+		setCapacity((tankEntities.size() + 1) * Settings.bucketsPerTank() * FluidStack.BUCKET_VOLUME);
 	}
 
 	/**
@@ -375,7 +394,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 
 			if (tankEntity != null)
 			{
-				tankEntity.sync();
+//				tankEntity.sync();
 				tankEntity.setChanged();
 			}
 		}
@@ -430,7 +449,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 			{
 				tanksToFill = tankPriorities.get(priorities[i]);
 
-				int capacity = tanksToFill.size() * Settings.bucketsPerTank * FluidStack.BUCKET_VOLUME;
+				int capacity = tanksToFill.size() * Settings.bucketsPerTank() * FluidStack.BUCKET_VOLUME;
 				int fillPercentage = Mth.clamp((int) Math.ceil((double) amountToDistribute / (double) capacity * 100d), 0, 100);
 
 				for (BlockPos tank : tanksToFill)
@@ -1059,17 +1078,17 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 	/**
 	 * Writes the tank priority map to the specified NBT tag.
 	 * 
-	 * @param tag
+	 * @param output
 	 * The tag to write to.
 	 */
-	private void writeTankPrioritiesToNBT(CompoundTag tag)
+	private void writeTankPrioritiesToNBT(ValueOutput output)
 	{
-		if (tag == null)
+		if (output == null)
 		{
 			return;
 		}
 
-		CompoundTag tankPrioritiesTag = new CompoundTag();
+		ValueOutput tankPrioritiesTag = output.child("TankPriorities");
 		BlockPos currentCoords;
 		int[] serializableEntry;
 		int i = 0;
@@ -1081,23 +1100,21 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 			tankPrioritiesTag.putIntArray(Integer.toString(i), serializableEntry);
 			i++;
 		}
-
-		tag.put("TankPriorities", tankPrioritiesTag);
 	}
 
 	/**
 	 * Read the tank priority map from the specified NBT tag.
 	 * 
-	 * @param tag
+	 * @param input
 	 * The tag to read from.
 	 */
-	private void readTankPrioritiesFromNBT(CompoundTag tag)
+	private void readTankPrioritiesFromNBT(ValueInput input)
 	{
-		if (tag != null)
+		if (input != null)
 		{
-			CompoundTag tankPrioritiesTag = tag.getCompound("TankPriorities");
+			var tankPrioritiesTag = input.child("TankPriorities").get();
 
-			if (!tankPrioritiesTag.isEmpty())
+			if (!tankPrioritiesTag.keySet().isEmpty())
 			{
 				tankPriorities = ArrayListMultimap.create();
 
@@ -1107,7 +1124,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 
 				while (tankPrioritiesTag.contains(key = Integer.toString(i)))
 				{
-					serializedEntry = tankPrioritiesTag.getIntArray(key);
+					serializedEntry = tankPrioritiesTag.getIntArray(key).get();
 					tankPriorities.put(serializedEntry[0], new BlockPos(serializedEntry[1], serializedEntry[2], serializedEntry[3]));
 					i++;
 				}
@@ -1121,7 +1138,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 
 	private FluidStack fluid;
 	private int capacity;
-
 
 	public FluidStack getFluid()
 	{
@@ -1210,7 +1226,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler, Bloc
 	private void fluidChanged(FluidChange change)
 	{
 		distributeFluidToTanks();
-		if (change.isType()) sync();
+//		if (change.isType()) sync();
 		setChanged();
 	}
 

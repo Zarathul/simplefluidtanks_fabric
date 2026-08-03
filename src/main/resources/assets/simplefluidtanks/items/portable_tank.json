@@ -1,0 +1,6 @@
+{
+	"model": {
+		"type": "minecraft:model",
+		"model": "simplefluidtanks:item/portable_tank"
+	}
+}

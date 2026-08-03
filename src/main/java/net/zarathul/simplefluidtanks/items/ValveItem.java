@@ -4,7 +4,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -27,18 +27,15 @@ public class ValveItem extends BlockItem
 	private static final String toolTipKey = "item." + SimpleFluidTanks.MOD_ID + "." + SimpleFluidTanks.VALVE_ITEM_NAME + ".tooltip";
 	private static final String toolTipDetailsKey = "item." + SimpleFluidTanks.MOD_ID + "." + SimpleFluidTanks.VALVE_ITEM_NAME + ".tooltip_details";
 
-	public ValveItem()
+	public ValveItem(ResourceKey<Item> id)
 	{
-		super(SimpleFluidTanks.blockValve, new Item.Properties()
-				.stacksTo(64)
-				.tab(SimpleFluidTanks.creativeTab));
+		super(SimpleFluidTanks.blockValve, new Item.Properties().setId(id).stacksTo(64));
 	}
 
-	@Override
 	@Environment(EnvType.CLIENT)
 	public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag tooltipFlag)
 	{
-		long windowHandle = Minecraft.getInstance().getWindow().getWindow();
+		long windowHandle = Minecraft.getInstance().getWindow().handle();
 		int leftShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_LEFT_SHIFT);
 		int rightShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_RIGHT_SHIFT);
 
@@ -48,7 +45,7 @@ public class ValveItem extends BlockItem
 		}
 		else
 		{
-			tooltip.add(new TranslatableComponent(toolTipKey));
+			tooltip.add(Component.translatable(toolTipKey));
 		}
 	}
 }

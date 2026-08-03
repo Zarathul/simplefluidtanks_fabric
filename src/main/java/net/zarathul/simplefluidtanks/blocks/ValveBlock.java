@@ -1,8 +1,11 @@
 package net.zarathul.simplefluidtanks.blocks;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -12,12 +15,19 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
@@ -33,23 +43,62 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ValveBlock extends WrenchableBlock
 {
-	public ValveBlock()
+	public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
+	public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
+	public static final BooleanProperty CONNECTED_DOWN = BooleanProperty.create("connected_down");
+	public static final BooleanProperty CONNECTED_UP = BooleanProperty.create("connected_up");
+	public static final BooleanProperty CONNECTED_NORTH = BooleanProperty.create("connected_north");
+	public static final BooleanProperty CONNECTED_SOUTH = BooleanProperty.create("connected_south");
+	public static final BooleanProperty CONNECTED_WEST = BooleanProperty.create("connected_west");
+	public static final BooleanProperty CONNECTED_EAST = BooleanProperty.create("connected_east");
+
+	public ValveBlock(ResourceKey<Block> id)
 	{
-		super(Block.Properties.of(SimpleFluidTanks.tankMaterial)
-				.strength(Settings.valveBlockHardness, Settings.valveBlockResistance)
-				.sound(SoundType.METAL));
+		super(Block.Properties.of()
+			.setId(id)
+			.strength(Settings.valveBlockHardness(), Settings.valveBlockResistance())
+			.sound(SoundType.METAL));
 	}
 
 	@Override
-	public @Nullable BlockEntity newBlockEntity(BlockGetter blockGetter)
+	public @Nullable BlockEntity newBlockEntity(BlockPos worldPosition, BlockState blockState)
 	{
-		return new ValveBlockEntity();
+		return new ValveBlockEntity(worldPosition, blockState);
 	}
 
 	@Override
 	public boolean isRandomlyTicking(BlockState blockState)
 	{
 		return false;
+	}
+
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
+	{
+		builder.add(
+			FACING,
+			CONNECTED,
+			CONNECTED_DOWN,
+			CONNECTED_UP,
+			CONNECTED_NORTH,
+			CONNECTED_SOUTH,
+			CONNECTED_WEST,
+			CONNECTED_EAST
+		);
+	}
+
+	@Override
+	public @Nullable BlockState getStateForPlacement(BlockPlaceContext context)
+	{
+		return this.defaultBlockState()
+			.setValue(FACING, context.getHorizontalDirection().getOpposite())
+			.setValue(CONNECTED,       false)
+			.setValue(CONNECTED_DOWN,  false)
+			.setValue(CONNECTED_UP,    false)
+			.setValue(CONNECTED_NORTH, false)
+			.setValue(CONNECTED_SOUTH, false)
+			.setValue(CONNECTED_WEST,  false)
+			.setValue(CONNECTED_EAST,  false);
 	}
 
 	@Override
@@ -63,10 +112,16 @@ public class ValveBlock extends WrenchableBlock
 
 			if (valveEntity != null)
 			{
-				//level.setBlockEntity(pos, valveEntity);
+				level.setBlockEntity(valveEntity);
 				valveEntity.setFacing(facing);
 				valveEntity.formMultiblock();
 				level.getChunkAt(pos).markUnsaved();
+
+				if (valveEntity.hasTanks())
+				{
+					BlockState newState = getStateFromEntity(valveEntity);
+					level.setBlockAndUpdate(pos, newState);
+				}
 			}
 		}
 
@@ -74,11 +129,11 @@ public class ValveBlock extends WrenchableBlock
 	}
 
 	@Override
-	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+	protected InteractionResult useItemOn(ItemStack itemStack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult)
 	{
-		if (!world.isClientSide())
+		if (!level.isClientSide())
 		{
-			ValveBlockEntity valveEntity = Utils.getBlockEntityAt(world, ValveBlockEntity.class, pos);
+			ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
 
 			if (valveEntity != null)
 			{
@@ -93,17 +148,17 @@ public class ValveBlock extends WrenchableBlock
 											SoundEvents.BUCKET_EMPTY : SoundEvents.BUCKET_FILL;
 
 					((ServerPlayer)player).connection.send(new ClientboundSoundPacket(
-							soundevent,
-							SoundSource.BLOCKS,
-							player.getX(), player.getY(), player.getZ(),
-							1.0f, 1.0f));
+						Holder.direct(soundevent),
+						SoundSource.BLOCKS,
+						player.getX(), player.getY(), player.getZ(),
+						1.0f, 1.0f, level.getRandom().nextLong()));
 				}
 			}
 		}
 
 		if (FluidHelper.isFluidContainerItem(player.getItemInHand(hand))) return InteractionResult.SUCCESS;
 
-		return super.use(state, world, pos, player, hand, hit);
+		return super.useItemOn(itemStack, state, level, pos, player, hand, hitResult);
 	}
 
 	@Override
@@ -113,9 +168,9 @@ public class ValveBlock extends WrenchableBlock
 	}
 
 	@Override
-	public int getAnalogOutputSignal(BlockState state, Level world, BlockPos pos)
+	protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction)
 	{
-		ValveBlockEntity valveEntity = Utils.getBlockEntityAt(world, ValveBlockEntity.class, pos);
+		ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
 
 		if (valveEntity != null)
 		{
@@ -130,14 +185,14 @@ public class ValveBlock extends WrenchableBlock
 	}
 
 	@Override
-	public void onRemove(BlockState state, Level world, BlockPos pos, BlockState newState, boolean isMoving)
+	public void destroy(LevelAccessor level, BlockPos pos, BlockState state)
 	{
-		if (!world.isClientSide())
+		if (!level.isClientSide())
 		{
-			if (newState.getBlock() != SimpleFluidTanks.blockValve)
+			if (state.getBlock() == SimpleFluidTanks.blockValve)
 			{
 				// disband the multiblock if the valve is mined/destroyed
-				ValveBlockEntity valveEntity = Utils.getBlockEntityAt(world, ValveBlockEntity.class, pos);
+				ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
 
 				if (valveEntity != null)
 				{
@@ -146,7 +201,7 @@ public class ValveBlock extends WrenchableBlock
 			}
 		}
 
-		super.onRemove(state, world, pos, newState, isMoving);
+		super.destroy(level, pos, state);
 	}
 
 	@Override
@@ -169,6 +224,25 @@ public class ValveBlock extends WrenchableBlock
 		{
 			// rebuild the tank
 			valveEntity.formMultiblock();
+			world.setBlockAndUpdate(pos, getStateFromEntity(valveEntity));
 		}
+	}
+
+	@Override
+	protected MapCodec<? extends BaseEntityBlock> codec()
+	{
+		return simpleCodec(props -> new ValveBlock(props.blockId()));
+	}
+
+	private BlockState getStateFromEntity(ValveBlockEntity blockEntity)
+	{
+		return defaultBlockState()
+			.setValue(CONNECTED, true)
+			.setValue(CONNECTED_NORTH, blockEntity.isFacingTank(Direction.NORTH))
+			.setValue(CONNECTED_SOUTH, blockEntity.isFacingTank(Direction.SOUTH))
+			.setValue(CONNECTED_EAST,  blockEntity.isFacingTank(Direction.EAST))
+			.setValue(CONNECTED_WEST,  blockEntity.isFacingTank(Direction.WEST))
+			.setValue(CONNECTED_DOWN,  blockEntity.isFacingTank(Direction.DOWN))
+			.setValue(CONNECTED_UP,    blockEntity.isFacingTank(Direction.UP));
 	}
 }

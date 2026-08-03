@@ -1,27 +1,34 @@
 package net.zarathul.simplefluidtanks.blocks.entities;
 
-import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
 import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplefluidtanks.rendering.ConnectedTexturesHelper;
 import net.zarathul.simplemods.api.fluid.FluidStack;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
 
 /**
  * Holds {@link BlockEntity} data for {@link TankBlock}s,
  */
-public class TankBlockEntity extends BlockEntity implements BlockEntityClientSerializable
+public class TankBlockEntity extends BlockEntity
 {
 	/**
 	 * The fill level of the tank.
@@ -44,16 +51,16 @@ public class TankBlockEntity extends BlockEntity implements BlockEntityClientSer
 	private boolean[] connections;
 
 	/**
-	 * Texture indices for the 6 sides of the tank block, see {@link net.zarathul.simplefluidtanks.rendering.ConnectedTexturesHelper#textures}.
+	 * Texture indices for the 6 sides of the tank block, see {@link net.zarathul.simplefluidtanks.rendering.ConnectedTexturesHelper}.
 	 */
 	private int[] textures;
 
 	/**
 	 * Default constructor.
 	 */
-	public TankBlockEntity()
+	public TankBlockEntity(final BlockPos pos, final BlockState state)
 	{
-		super(SimpleFluidTanks.entityTank);
+		super(SimpleFluidTanks.blockEntityTypeTank, pos, state);
 
 		fillLevel = 0;
 		isPartOfTank = false;
@@ -74,66 +81,75 @@ public class TankBlockEntity extends BlockEntity implements BlockEntityClientSer
 	private static final String TAG_TEXTURES = "textures";
 
 	@Override
-	public CompoundTag save(CompoundTag tag)
+	protected void saveAdditional(ValueOutput output)
 	{
-		super.save(tag);
+		super.saveAdditional(output);
 
-		tag.putByte(TAG_FILL_LEVEL, (byte)fillLevel);
-		tag.putBoolean(TAG_IS_PART_OF_TANK, isPartOfTank);
+		output.putByte(TAG_FILL_LEVEL, (byte)fillLevel);
+		output.putBoolean(TAG_IS_PART_OF_TANK, isPartOfTank);
 
 		if (valveCoords != null)
 		{
 			int[] valveCoordsArray = new int[] { valveCoords.getX(), valveCoords.getY(), valveCoords.getZ() };
-			tag.putIntArray(TAG_VALVE_COORDS, valveCoordsArray);
+			output.putIntArray(TAG_VALVE_COORDS, valveCoordsArray);
 		}
 
-		tag.putBoolean(TAG_CONNECTION_Y_NEG, connections[Direction.DOWN.get3DDataValue()]);
-		tag.putBoolean(TAG_CONNECTION_Y_POS, connections[Direction.UP.get3DDataValue()]);
-		tag.putBoolean(TAG_CONNECTION_Z_NEG, connections[Direction.NORTH.get3DDataValue()]);
-		tag.putBoolean(TAG_CONNECTION_Z_POS, connections[Direction.SOUTH.get3DDataValue()]);
-		tag.putBoolean(TAG_CONNECTION_X_NEG, connections[Direction.WEST.get3DDataValue()]);
-		tag.putBoolean(TAG_CONNECTION_X_POS, connections[Direction.EAST.get3DDataValue()]);
+		output.putBoolean(TAG_CONNECTION_Y_NEG, connections[Direction.DOWN.get3DDataValue()]);
+		output.putBoolean(TAG_CONNECTION_Y_POS, connections[Direction.UP.get3DDataValue()]);
+		output.putBoolean(TAG_CONNECTION_Z_NEG, connections[Direction.NORTH.get3DDataValue()]);
+		output.putBoolean(TAG_CONNECTION_Z_POS, connections[Direction.SOUTH.get3DDataValue()]);
+		output.putBoolean(TAG_CONNECTION_X_NEG, connections[Direction.WEST.get3DDataValue()]);
+		output.putBoolean(TAG_CONNECTION_X_POS, connections[Direction.EAST.get3DDataValue()]);
 
-		tag.putIntArray(TAG_TEXTURES, textures);
-
-		return tag;
+		output.putIntArray(TAG_TEXTURES, textures);
 	}
 
 	@Override
-	public void load(BlockState state, CompoundTag tag)
+	protected void loadAdditional(ValueInput input)
 	{
-		super.load(state, tag);
+		super.loadAdditional(input);
 
-		fillLevel = tag.getByte(TAG_FILL_LEVEL);
-		isPartOfTank = tag.getBoolean(TAG_IS_PART_OF_TANK);
+		fillLevel = input.getByteOr(TAG_FILL_LEVEL, (byte)0);
+		isPartOfTank = input.getBooleanOr(TAG_IS_PART_OF_TANK, false);
 
 		if (isPartOfTank)
 		{
-			int[] valveCoordsArray = tag.getIntArray(TAG_VALVE_COORDS);
+			int[] valveCoordsArray = input.getIntArray(TAG_VALVE_COORDS).get();
 			valveCoords = new BlockPos(valveCoordsArray[0], valveCoordsArray[1], valveCoordsArray[2]);
 		}
 
 		connections = new boolean[6];
-		connections[Direction.DOWN.get3DDataValue()] = tag.getBoolean(TAG_CONNECTION_Y_NEG);
-		connections[Direction.UP.get3DDataValue()] = tag.getBoolean(TAG_CONNECTION_Y_POS);
-		connections[Direction.NORTH.get3DDataValue()] = tag.getBoolean(TAG_CONNECTION_Z_NEG);
-		connections[Direction.SOUTH.get3DDataValue()] = tag.getBoolean(TAG_CONNECTION_Z_POS);
-		connections[Direction.WEST.get3DDataValue()] = tag.getBoolean(TAG_CONNECTION_X_NEG);
-		connections[Direction.EAST.get3DDataValue()] = tag.getBoolean(TAG_CONNECTION_X_POS);
+		connections[Direction.DOWN.get3DDataValue()]  = input.getBooleanOr(TAG_CONNECTION_Y_NEG, false);
+		connections[Direction.UP.get3DDataValue()]    = input.getBooleanOr(TAG_CONNECTION_Y_POS, false);
+		connections[Direction.NORTH.get3DDataValue()] = input.getBooleanOr(TAG_CONNECTION_Z_NEG, false);
+		connections[Direction.SOUTH.get3DDataValue()] = input.getBooleanOr(TAG_CONNECTION_Z_POS, false);
+		connections[Direction.WEST.get3DDataValue()]  = input.getBooleanOr(TAG_CONNECTION_X_NEG, false);
+		connections[Direction.EAST.get3DDataValue()]  = input.getBooleanOr(TAG_CONNECTION_X_POS, false);
 
-		textures = tag.getIntArray(TAG_TEXTURES);
+		textures = input.getIntArray(TAG_TEXTURES).get();
 	}
 
 	@Override
-	public CompoundTag toClientTag(CompoundTag tag)
+	public CompoundTag getUpdateTag(HolderLookup.Provider registries)
 	{
-		return save(tag);
+		return saveWithoutMetadata(registries);
 	}
 
 	@Override
-	public void fromClientTag(CompoundTag tag)
+	public @Nullable Packet<ClientGamePacketListener> getUpdatePacket()
 	{
-		load(getBlockState(), tag);
+		return ClientboundBlockEntityDataPacket.create(this);
+	}
+
+	@Override
+	public void setChanged()
+	{
+		super.setChanged();
+
+		if (level == null) return;
+
+		BlockState state = getBlockState();
+		level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_ALL);
 	}
 
 	/**
@@ -225,7 +241,7 @@ public class TankBlockEntity extends BlockEntity implements BlockEntityClientSer
 
 		if (levelChanged || forceBlockUpdate)
 		{
-			sync();
+//			sync();
 			setChanged();
 		}
 
@@ -364,7 +380,7 @@ public class TankBlockEntity extends BlockEntity implements BlockEntityClientSer
 
 		if (!suppressBlockUpdates)
 		{
-			sync();
+//			sync();
 			setChanged();
 		}
 	}
@@ -375,7 +391,7 @@ public class TankBlockEntity extends BlockEntity implements BlockEntityClientSer
 	 * @param direction
 	 * One of the {@link Direction} values.
 	 * @return
-	 * An index for the {@link ConnectedTexturesHelper#textures} array, or <c>-1</c> if there is no texture set for
+	 * An index for the {@link ConnectedTexturesHelper} array, or <c>-1</c> if there is no texture set for
 	 * the specified side.
 	 */
 	public int getTextureIndex(Direction direction)

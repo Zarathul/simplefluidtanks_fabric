@@ -5,14 +5,16 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.locale.Language;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
@@ -31,6 +33,19 @@ import java.util.Locale;
 public final class Utils
 {
 	/**
+	 * Creates an Identifier with the Mod-ID as the namespace.
+	 *
+	 * @param path
+	 * The path to create the Identifier for.
+	 * @return
+	 * An Identifier with <code>SimplePortals.MOD_ID</code> as the namespace, and <code>path</code> as the path.
+	 */
+	public static Identifier createModIdentifier(String path)
+	{
+		return Identifier.fromNamespaceAndPath(SimpleFluidTanks.MOD_ID, path);
+	}
+
+	/**
 	 * Gets the {@link BlockEntity} at the specified coordinates, cast to the specified type.
 	 * 
 	 * @param world
@@ -41,11 +56,11 @@ public final class Utils
 	 * The coordinates of the {@link BlockEntity}.
 	 * @return The {@link BlockEntity} or <code>null</code> if no {@link BlockEntity} was found or the types didn't match.
 	 */
- 	public static <T extends BlockEntity> T getBlockEntityAt(Level world, Class<T> tileType, BlockPos pos)
+ 	public static <T extends BlockEntity> T getBlockEntityAt(LevelAccessor world, Class<T> tileType, BlockPos pos)
 	{
 		if (world != null && tileType != null && pos != null)
 		{
-			BlockEntity tile = world.getChunkAt(pos).getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK);
+			BlockEntity tile = world.getBlockEntity(pos);
 
 			if (tile != null && tile.getClass() == tileType)
 			{
@@ -67,7 +82,7 @@ public final class Utils
 	 * @param pos
 	 * The {@link TankBlock}s coordinates.
 	 */
-	public static ValveBlockEntity getValve(Level world, BlockPos pos)
+	public static ValveBlockEntity getValve(LevelAccessor world, BlockPos pos)
 	{
 		if (world != null && pos != null)
 		{
@@ -119,18 +134,19 @@ public final class Utils
 	 * @return
 	 * A list of localized text components for the specified key, or an empty list if the key was not found.
 	 */
-	public static ArrayList<TextComponent> multiLineTranslate(String key, Object... args)
+	public static ArrayList<Component> multiLineTranslate(String key, Object... args)
 	{
-		ArrayList<TextComponent> components = new ArrayList<>();
+		ArrayList<Component> components = new ArrayList<>();
+		Language I18N = Language.getInstance();
 
-		if ((key != null) && I18n.exists(key))
+		if ((key != null) && I18N.has(key))
 		{
 			String text = I18n.get(key, args);
 			String[] lines = text.split("\\n");
 
 			for (String line : lines)
 			{
-				components.add(new TextComponent(line));
+				components.add(Component.literal(line));
 			}
 		}
 
@@ -296,8 +312,8 @@ public final class Utils
 	 */
 	public static BlockHitResult getPlayerPOVHitResult(Level world, Player player)
 	{
-		float pitch = player.xRot;
-		float yaw = player.yRot;
+		float pitch = player.xRotO; // TODO: might be getXRot() and getYRot()
+		float yaw = player.yRotO;
 		Vec3 eyePos = player.getEyePosition(1.0F);
 		float h = Mth.cos(-yaw * 0.017453292F - 3.1415927F);
 		float i = Mth.sin(-yaw * 0.017453292F - 3.1415927F);
@@ -308,5 +324,21 @@ public final class Utils
 		Vec3 target = eyePos.add((double) l * 5.0D, (double) k * 5.0D, (double) n * 5.0D);
 
 		return world.clip(new ClipContext(eyePos, target, net.minecraft.world.level.ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
+	}
+
+	/**
+	 * Centers an object of a given size in a container at a specified offset.
+	 *
+	 * @param offset
+	 * Offest at which the container resides.
+	 * @param containerSize
+	 * Size of the container.
+	 * @param objectSize
+	 * @return
+	 * May return a negative value, in case the object size is bigger than the container.
+	 */
+	public static int centerIn(int offset, int containerSize, int objectSize)
+	{
+		return offset + (containerSize - objectSize) / 2;
 	}
 }

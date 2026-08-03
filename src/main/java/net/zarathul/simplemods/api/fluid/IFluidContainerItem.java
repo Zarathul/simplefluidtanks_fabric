@@ -2,18 +2,17 @@ package net.zarathul.simplemods.api.fluid;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 
 public interface IFluidContainerItem
 {
-	String CONTAINER_TAG_NAME = "fluid_container_item";
-
 	default
 	FluidStack getFluid(ItemStack stack)
 	{
-		CompoundTag tag = stack.getTagElement(CONTAINER_TAG_NAME);
-		if (tag == null) return FluidStack.empty();
+		var component = stack.get(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT);
+		if (component == null) return FluidStack.empty();
 
-		FluidStack fluid = FluidStack.load(tag);
+		FluidStack fluid = FluidStack.from(component);
 
 		return fluid;
 	}
@@ -32,15 +31,7 @@ public interface IFluidContainerItem
 		drainedFluid.setAmount(Math.min(fluid.getAmount(), drainAmount));
 		fluid.changeAmount(-drainedFluid.getAmount());
 
-		CompoundTag tag = stack.getOrCreateTagElement(CONTAINER_TAG_NAME);
-		fluid.save(tag);
-
-		// Update damage value, which is used to display the fill level of the tank.
-		// Because the damage indicator is hidden if the item is undamaged, always set
-		// the damage to 1 instead of 0 so that it remains visible.
-		int damage = getCapacity() - fluid.getAmount();
-		damage = Math.max(damage, 1);
-		stack.setDamageValue(damage);
+		stack.set(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(fluid.getAmount(), getCapacity(), fluid.getRegistryKey()));
 
 		return drainedFluid;
 	}
@@ -55,16 +46,10 @@ public interface IFluidContainerItem
 
 		if (fluid.isEmpty())
 		{
-			CompoundTag tag = stack.getOrCreateTagElement(CONTAINER_TAG_NAME);
 			fluid = fillFluid.copy();
 			// limit the stored fluid to the tanks capacity
 			if (!fluid.isEmpty()) fluid.setAmount(Math.min(fluid.getAmount(), capacity));
-			fluid.save(tag);
-
-			// See comment in drain().
-			int damage = capacity - fluid.getAmount();
-			damage = Math.max(damage, 1);
-			stack.setDamageValue(damage);
+			stack.set(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(fluid.getAmount(), capacity, fluid.getRegistryKey()));
 
 			return fluid.getAmount();
 		}
@@ -76,13 +61,7 @@ public interface IFluidContainerItem
 		if (fillAmount > 0)
 		{
 			fluid.changeAmount(fillAmount);
-			CompoundTag tag = stack.getOrCreateTagElement(CONTAINER_TAG_NAME);
-			fluid.save(tag);
-
-			// See comment in drain().
-			int damage = capacity - fluid.getAmount();
-			damage = Math.max(damage, 1);
-			stack.setDamageValue(damage);
+			stack.set(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(fluid.getAmount(), capacity, fluid.getRegistryKey()));
 		}
 
 		return fillAmount;

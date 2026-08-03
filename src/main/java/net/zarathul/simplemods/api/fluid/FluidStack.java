@@ -1,11 +1,11 @@
 package net.zarathul.simplemods.api.fluid;
 
-import net.minecraft.core.Registry;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.Objects;
 
@@ -13,18 +13,18 @@ public class FluidStack
 {
 	public static final int BUCKET_VOLUME = 1000;	// in mB (milli-Buckets)
 	private static final FluidStack EMPTY = new FluidStack(Fluids.EMPTY, 0);
-	private static final ResourceLocation EMPTY_FLUID_KEY = Registry.FLUID.getKey(Fluids.EMPTY);
+	private static final Identifier EMPTY_FLUID_KEY = BuiltInRegistries.FLUID.getDefaultKey();
 
 	private Fluid fluid;
 	private int amount;
-	private ResourceLocation key;
+	private Identifier key;
 
 	public FluidStack(Fluid fluid, int amount)
 	{
-		this(fluid, amount, Registry.FLUID.getKey(fluid));
+		this(fluid, amount, BuiltInRegistries.FLUID.getKey(fluid));
 	}
 
-	private FluidStack(Fluid fluid, int amount, ResourceLocation key)
+	private FluidStack(Fluid fluid, int amount, Identifier key)
 	{
 		this.fluid  = fluid;
 		this.amount = amount;
@@ -60,7 +60,7 @@ public class FluidStack
 		this.amount += delta;
 	}
 
-	public ResourceLocation getRegistryKey()
+	public Identifier getRegistryKey()
 	{
 		return key;
 	}
@@ -80,30 +80,29 @@ public class FluidStack
 		return EMPTY.copy();
 	}
 
-	private static final String TAG_FLUID_KEY = "fluid_key";
-	private static final String TAG_FLUID_AMOUNT = "fluid_amount";
+	private static final String FLUID_KEY = "fluid_key";
+	private static final String FLUID_AMOUNT = "fluid_amount";
 
-	public CompoundTag save(CompoundTag tag)
+	public void save(ValueOutput output)
 	{
-		tag.putInt(TAG_FLUID_AMOUNT, amount);
-
-		ResourceLocation fluidKey = (amount == 0) ? EMPTY_FLUID_KEY : key;
-		tag.putString(TAG_FLUID_KEY, fluidKey.toString());
-
-		return tag;
+		output.putInt(FLUID_AMOUNT, amount);
+		output.putString(FLUID_KEY, key.toString());
 	}
 
-	public void load(BlockState state, CompoundTag tag)
+	public void load(ValueInput input)
 	{
-		amount = tag.getInt(TAG_FLUID_AMOUNT);
-		key    = (!tag.contains(TAG_FLUID_KEY) || (amount == 0)) ? EMPTY_FLUID_KEY : new ResourceLocation(tag.getString(TAG_FLUID_KEY));
-		fluid  = Registry.FLUID.get(key);
+		amount = input.getInt(FLUID_AMOUNT).get();
+		key    = Identifier.parse(input.getString(FLUID_KEY).get());
+		fluid  = BuiltInRegistries.FLUID.get(key).get().value();
 	}
 
-	public static FluidStack load(CompoundTag tag)
+	public static FluidStack from(FluidContainerComponent input)
 	{
-		FluidStack stack = new FluidStack();
-		stack.load(null, tag);
+		var amount = input.amount();
+		var key    = (amount == 0) ? EMPTY_FLUID_KEY : input.fluid();
+		var fluid  = BuiltInRegistries.FLUID.get(key).get().value();	// TODO: maybe store Reference<Fluid> ?
+
+		FluidStack stack = new FluidStack(fluid, amount, key);
 
 		return stack;
 	}

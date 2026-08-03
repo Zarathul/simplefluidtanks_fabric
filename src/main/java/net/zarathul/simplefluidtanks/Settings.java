@@ -1,54 +1,36 @@
 package net.zarathul.simplefluidtanks;
 
+import net.minecraft.resources.Identifier;
+import net.zarathul.simplefluidtanks.common.Utils;
+import net.zarathul.simplefluidtanks.configuration.Config;
 import net.zarathul.simplefluidtanks.configuration.ConfigSetting;
 
 public final class Settings
 {
-	@ConfigSetting(descriptionKey = "buckets_per_tank", description = "The amount of fluid one tank block can hold measured in buckets. If this value is changed, all tanks already placed in the world need to be manually updated by right-clicking the valve with the wrench.", category = "misc")
-	public static int bucketsPerTank;
-	public static final int bucketsPerTankDefault = 32;
-	public static boolean bucketsPerTankValidator(int value)
+
+	public static final Identifier BUCKETS_PER_TANK = Utils.createModIdentifier("buckets_per_tank");
+	public static final Identifier BUCKETS_PER_PORTABLE_TANK = Utils.createModIdentifier("buckets_per_portable_tank");
+	public static final Identifier TANK_BLOCK_HARDNESS = Utils.createModIdentifier("tank_block_hardness");
+	public static final Identifier TANK_BLOCK_RESISTANCE = Utils.createModIdentifier("tank_block_resistance");
+	public static final Identifier VALVE_BLOCK_HARDNESS = Utils.createModIdentifier("valve_block_hardness");
+	public static final Identifier VALVE_BLOCK_RESISTANCE = Utils.createModIdentifier("valve_block_resistance");
+
+	public static int   bucketsPerTank()         { return (int)   Config.getSetting(BUCKETS_PER_TANK).get().value; }
+	public static int   bucketsPerPortableTank() { return (int)   Config.getSetting(BUCKETS_PER_PORTABLE_TANK).get().value; }
+	public static float tankBlockHardness()      { return (float) Config.getSetting(TANK_BLOCK_HARDNESS).get().value; }
+	public static float tankBlockResistance()    { return (float) Config.getSetting(TANK_BLOCK_RESISTANCE).get().value; }
+	public static float valveBlockHardness()     { return (float) Config.getSetting(VALVE_BLOCK_HARDNESS).get().value; }
+	public static float valveBlockResistance()   { return (float) Config.getSetting(VALVE_BLOCK_RESISTANCE).get().value; }
+
+	public static void init()
 	{
-		return (value > 1);
+		Config.addInt(BUCKETS_PER_TANK, 32, ConfigSetting.INT_GREATER_THAN_ZERO, "The amount of fluid one tank block can hold measured in buckets. If this value is changed, all tanks already placed in the world need to be manually updated by right-clicking the valve with the wrench.", "misc", true, 4, false);
+		Config.addInt(BUCKETS_PER_PORTABLE_TANK, 16, ConfigSetting.INT_GREATER_THAN_ZERO, "The amount of fluid one portable tank can hold measured in buckets. Changing this value affects already existing portable tanks and may lead to loss of fluids if the value is lowered.", "misc", true, 4, false);
+		Config.addFloat(TANK_BLOCK_HARDNESS, 50.0f, ConfigSetting.FLOAT_GREATER_THAN_ZERO, "The amount of hits the block can take before it breaks (-1 = indestructible).", "blocks", true, 4, false);
+		Config.addFloat(TANK_BLOCK_RESISTANCE, 1000.0f, ConfigSetting.FLOAT_GREATER_THAN_ZERO, "The blocks resistance to explosions.", "blocks", true, 4, false);
+		Config.addFloat(VALVE_BLOCK_HARDNESS, 50.0f, ConfigSetting.FLOAT_GREATER_THAN_ZERO, "The amount of hits the block can take before it breaks (-1 = indestructible).", "blocks", true, 4, false);
+		Config.addFloat(VALVE_BLOCK_RESISTANCE, 1000.0f, ConfigSetting.FLOAT_GREATER_THAN_ZERO, "The blocks resistance to explosions.", "blocks", true, 4, false);
 	}
 
-	@ConfigSetting(descriptionKey = "buckets_per_portable_tank", description = "The amount of fluid one portable tank can hold measured in buckets. Changing this value affects already existing portable tanks and may lead to loss of fluids if the value is lowered.", category = "misc", needsWorldRestart = true)
-	public static int bucketsPerPortableTank;
-	public static final int bucketsPerPortableTankDefault = 16;
-	public static boolean bucketsPerPortableTankValidator(int value)
-	{
-		return (value > 1);
-	}
-
-	@ConfigSetting(descriptionKey = "tankblock_hardness", description = "The amount of hits the block can take before it breaks (-1 = indestructible).", category = "blocks")
-	public static float tankBlockHardness;
-	public static final float tankBlockHardnessDefault = 50;
-	public static boolean tankBlockHardnessValidator(float value)
-	{
-		return (value >= -1.0f);
-	}
-
-	@ConfigSetting(descriptionKey = "tankblock_resistance", description = "The blocks resistance to explosions.", category = "blocks")
-	public static float tankBlockResistance;
-	public static final float tankBlockResistanceDefault = 1000;
-	public static boolean tankBlockResistanceValidator(float value)
-	{
-		return (value >= 1.0f);
-	}
-
-	@ConfigSetting(descriptionKey = "valveblock_hardness", description = "The amount of hits the block can take before it breaks (-1 = indestructible).", category = "blocks")
-	public static float valveBlockHardness;
-	public static final float valveBlockHardnessDefault = 50;
-	public static boolean valveBlockHardnessValidator(float value)
-	{
-		return (value >= -1.0f);
-	}
-
-	@ConfigSetting(descriptionKey = "valveblock_resistance", description = "The blocks resistance to explosions.", category = "blocks")
-	public static float valveBlockResistance;
-	public static final float valveBlockResistanceDefault = 1000;
-	public static boolean valveBlockResistanceValidator(float value)
-	{
-		return (value >= 1.0f);
-	}
+	// TODO: unclear if -1 still makes blocks indestructible, if yes change the validator
 }

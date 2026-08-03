@@ -4,6 +4,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -23,18 +24,15 @@ public class WrenchItem extends Item
 	private static final String toolTipKey = "item." + SimpleFluidTanks.MOD_ID + "." + SimpleFluidTanks.WRENCH_ITEM_NAME + ".tooltip";
 	private static final String toolTipDetailsKey = "item." + SimpleFluidTanks.MOD_ID + "." + SimpleFluidTanks.WRENCH_ITEM_NAME + ".tooltip_details";
 
-	public WrenchItem()
+	public WrenchItem(ResourceKey<Item> id)
 	{
-		super(new Item.Properties()
-				.stacksTo(1)
-				.tab(SimpleFluidTanks.creativeTab));
+		super(new Item.Properties().setId(id).stacksTo(1));
 	}
 
-	@Override
 	@Environment(EnvType.CLIENT)
 	public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag tooltipFlag)
 	{
-		long windowHandle = Minecraft.getInstance().getWindow().getWindow();
+		long windowHandle = Minecraft.getInstance().getWindow().handle();
 		int leftShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_LEFT_SHIFT);
 		int rightShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_RIGHT_SHIFT);
 

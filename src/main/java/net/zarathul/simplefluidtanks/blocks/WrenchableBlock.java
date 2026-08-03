@@ -23,21 +23,21 @@ public abstract class WrenchableBlock extends BaseEntityBlock
 	}
 
 	@Override
-	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit)
+	protected InteractionResult useItemOn(ItemStack itemStack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult)
 	{
 		ItemStack heldStack = player.getItemInHand(hand);
 
 		if (!heldStack.isEmpty() && Utils.isWrenchItem(heldStack.getItem()))
 		{
-			if (!world.isClientSide())
+			if (!level.isClientSide())
 			{
-				handleToolWrenchClick(world, pos, player, heldStack);
+				handleToolWrenchClick(level, pos, player, heldStack);
 			}
 
 			return InteractionResult.SUCCESS;
 		}
 
-		return super.use(state, world, pos, player, hand, hit);
+		return super.useItemOn(itemStack, state, level, pos, player, hand, hitResult);
 	}
 
 	/**

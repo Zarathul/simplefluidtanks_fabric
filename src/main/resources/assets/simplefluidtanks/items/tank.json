@@ -1,0 +1,6 @@
+{
+	"model": {
+		"type": "minecraft:model",
+		"model": "simplefluidtanks:block/tank_default"
+	}
+}

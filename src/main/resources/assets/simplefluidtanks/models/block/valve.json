@@ -1,6 +1,6 @@
 {
-  "ambientocclusion": true,
-  "textures": {
-    "particle": "simplefluidtanks:block/valve"
-  }
+	"parent": "simplefluidtanks:block/template_face_north",
+	"textures": {
+		"texture": "simplefluidtanks:block/valve"
+	}
 }

@@ -1,56 +1,469 @@
 package net.zarathul.simplefluidtanks.configuration;
 
-import com.google.common.collect.Lists;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
+import net.minecraft.world.entity.player.Player;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
 
-/**
- * Provides methods to load/save mod settings into a config file.
- *
- * Public static fields of any class can be settings as long as they conform to the following rules:
- *
- * 1) A second public static final field of the same type must exist, that has the same name as the field
- *    holding the setting with 'Default' appended. (e.g. 'mySetting' and 'mySettingDefault'. This field
- *    holds the default value for the setting.
- *
- * 2) Optionally a public static method may exist, that takes one parameter of the same type as the setting
- *    field and returns a boolean. It has to have the same name as the setting with "Validator" appended
- *    (e.g. 'mySetting' and 'mySettingValidator'). This method is used for input validation.
- *
- * 3) int, float, boolean, enum and string are considered primitive types, everything else is a complex type.
- *
- * 4) For Complex types there must be two additional public static methods. One takes a string as a parameter
- *    and returns a value of the same type as the setting field. It has to have to same name as the field with
- *    'Load' appended (eg. 'mySetting' and 'mySettingLoad').
- *    The other one takes one parameter of the same type as the setting field and returns a string. It has to
- *    have to same name as the setting field with 'Save' appended (eg. 'mySetting' and 'mySettingSave').
- *    (Note: This was originally done using member function names of the setting field type stored in the
- *    ConfigSetting annotation. Unfortunately this only works in a Dev environment. In release all minecraft
- *    types have their original meaningless names restored and the reflection API can't find them anymore).
- *
- * 5) For a setting to be considered valid for use in the UI, it has to have a ConfigSetting annotation with
- *    at least the 'descriptionKey' value set. This is true for both, primitive and complex types.
- *
- *    Note to myself: DO NOT write annotation bases config systems ever again. They suck!
- *
- */
-public final class Config
+public class Config
 {
-	public static final String DEFAULT_CATEGORY = "common";
+	private static final Logger LOG = LogManager.getLogger("simpleconfig");
+	private static final Map<Identifier, ConfigSetting> registry = new HashMap<>();
+	private static final Map<Identifier, ConfigSetting> serverRegistry = new HashMap<>();
+	private static final String DEFAULT_CATEGORY = "";
 
-	public static void loadOrCreate(String configName, Class<?> clazz)
+	public static final String CATEGORY_I18N_PREFIX = "config.";
+	public static Map<Identifier, ConfigSetting> getRegistry() { return Collections.unmodifiableMap(registry); }
+	public static Optional<ConfigSetting> getSetting(Identifier id) { return (registry.containsKey(id)) ? Optional.of(registry.get(id)) : Optional.empty(); }
+	public static boolean setSettingValue(Identifier id, Object value)
+	{
+		if (!registry.containsKey(id)) return false;
+
+		registry.get(id).value = value;
+		return true;
+	}
+
+	public static List<ConfigSetting> getMergedSettings(List<ConfigValue> receivedServerValues)
+	{
+		List<ConfigSetting> settings = new ArrayList<>(registry.size());
+
+		registry.values().stream().filter(setting -> setting.clientOnly).forEach(settings::add);
+		// Since the server will only send ConfigValues for settings the player has the required permissions for,
+		// those can be used to filter out the other settings and not show them in the gui.
+		receivedServerValues.forEach(configValue -> {
+			if (serverRegistry.containsKey(configValue.id)) settings.add(serverRegistry.get(configValue.id));
+		});
+
+		return settings;
+	}
+
+	public static List<ConfigSetting> getSettings()
+	{
+		List<ConfigSetting> settings = new ArrayList<>(registry.size());
+		settings.addAll(registry.values());
+
+		return settings;
+	}
+
+	private static boolean addInt(
+		Identifier id,
+		int defaultValue,
+		Optional<Function<Object, Boolean>> validator,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		if (registry.containsKey(id)) return false;
+
+		var setting = new ConfigSetting(id, ConfigSetting.Type.Int, defaultValue, defaultValue, validator, description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+
+		try
+		{
+			registry.put(id, setting);
+			if (!setting.clientOnly) serverRegistry.put(id, setting.copy());
+		}
+		catch (Exception _)
+		{
+			LOG.error("Failed to register int setting with the id: {}", id);
+			return false;
+		}
+
+		return true;
+	}
+
+	public static boolean addInt(
+		Identifier id,
+		int defaultValue,
+		Function<Object, Boolean> validator,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addInt(id, defaultValue, Optional.of(validator), description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addInt(
+		Identifier id,
+		int defaultValue,
+		Function<Object, Boolean> validator,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addInt(id, defaultValue, Optional.of(validator), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addInt(
+		Identifier id,
+		int defaultValue,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addInt(id, defaultValue, Optional.empty(), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addInt(
+		Identifier id,
+		int defaultValue,
+		String description,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addInt(id, defaultValue, Optional.empty(), description, id.getPath(), DEFAULT_CATEGORY, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	private static boolean addFloat(
+		Identifier id,
+		float defaultValue,
+		Optional<Function<Object, Boolean>> validator,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		if (registry.containsKey(id)) return false;
+
+		var setting = new ConfigSetting(id, ConfigSetting.Type.Float, defaultValue, defaultValue, validator, description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+
+		try
+		{
+			registry.put(id, setting);
+			if (!setting.clientOnly) serverRegistry.put(id, setting.copy());
+		}
+		catch (Exception _)
+		{
+			LOG.error("Failed to register float setting with the id: {}", id);
+			return false;
+		}
+
+		return true;
+	}
+
+	public static boolean addFloat(
+		Identifier id,
+		float defaultValue,
+		Function<Object, Boolean> validator,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addFloat(id, defaultValue, Optional.of(validator), description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addFloat(
+		Identifier id,
+		float defaultValue,
+		Function<Object, Boolean> validator,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addFloat(id, defaultValue, Optional.of(validator), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addFloat(
+		Identifier id,
+		float defaultValue,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addFloat(id, defaultValue, Optional.empty(), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addFloat(
+		Identifier id,
+		float defaultValue,
+		String description,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addFloat(id, defaultValue, Optional.empty(), description, id.getPath(), DEFAULT_CATEGORY, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	private static boolean addBool(
+		Identifier id,
+		boolean defaultValue,
+		Optional<Function<Object, Boolean>> validator,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		if (registry.containsKey(id)) return false;
+
+		var setting = new ConfigSetting(id, ConfigSetting.Type.Boolean, defaultValue, defaultValue, validator, description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+
+		try
+		{
+			registry.put(id, setting);
+			if (!setting.clientOnly) serverRegistry.put(id, setting.copy());
+		}
+		catch (Exception _)
+		{
+			LOG.error("Failed to register boolean setting with the id: {}", id);
+			return false;
+		}
+
+		return true;
+	}
+
+	public static boolean addBool(
+		Identifier id,
+		boolean defaultValue,
+		Function<Object, Boolean> validator,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addBool(id, defaultValue, Optional.of(validator), description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addBool(
+		Identifier id,
+		boolean defaultValue,
+		Function<Object, Boolean> validator,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addBool(id, defaultValue, Optional.of(validator), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addBool(
+		Identifier id,
+		boolean defaultValue,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addBool(id, defaultValue, Optional.empty(), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addBool(
+		Identifier id,
+		boolean defaultValue,
+		String description,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addBool(id, defaultValue, Optional.empty(), description, id.getPath(), DEFAULT_CATEGORY, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	private static boolean addString(
+		Identifier id,
+		String defaultValue,
+		Optional<Function<Object, Boolean>> validator,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		if (registry.containsKey(id)) return false;
+
+		var setting = new ConfigSetting(id, ConfigSetting.Type.String, defaultValue, defaultValue, validator, description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+
+		try
+		{
+			registry.put(id, setting);
+			if (!setting.clientOnly) serverRegistry.put(id, setting.copy());
+		}
+		catch (Exception _)
+		{
+			LOG.error("Failed to register string setting with the id: {}", id);
+			return false;
+		}
+
+		return true;
+	}
+
+	public static boolean addString(
+		Identifier id,
+		String defaultValue,
+		Function<Object, Boolean> validator,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addString(id, defaultValue, Optional.of(validator), description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addString(
+		Identifier id,
+		String defaultValue,
+		Function<Object, Boolean> validator,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addString(id, defaultValue, Optional.of(validator), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addString(
+		Identifier id,
+		String defaultValue,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addString(id, defaultValue, Optional.empty(), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addString(
+		Identifier id,
+		String defaultValue,
+		String description,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addString(id, defaultValue, Optional.empty(), description, id.getPath(), DEFAULT_CATEGORY, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	private static boolean addComplex(
+		Identifier id,
+		Object defaultValue,
+		Optional<Function<Object, Boolean>> validator,
+		Optional<Function<Object, String>> stringifier,
+		Optional<Function<String, Object>> destringifier,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		if (registry.containsKey(id)) return false;
+
+		try
+		{
+			// Complex types without stringifier or destringifier cause an exception.
+			var setting = new ConfigSetting(id, ConfigSetting.Type.Complex, defaultValue, defaultValue, validator, stringifier, destringifier, description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+
+			registry.put(id, setting);
+			if (!setting.clientOnly) serverRegistry.put(id, setting.copy());
+		}
+		catch (Exception _)
+		{
+			LOG.error("Failed to register complex setting with the id: {}", id);
+			return false;
+		}
+
+		return true;
+	}
+
+	public static boolean addComplex(
+		Identifier id,
+		Object defaultValue,
+		Function<Object, Boolean> validator,
+		Function<Object, String> stringifier,
+		Function<String, Object> destringifier,
+		String description,
+		String descriptionKey,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addComplex(id, defaultValue, Optional.of(validator), Optional.of(stringifier), Optional.of(destringifier), description, descriptionKey, category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addComplex(
+		Identifier id,
+		Object defaultValue,
+		Function<Object, Boolean> validator,
+		Function<Object, String> stringifier,
+		Function<String, Object> destringifier,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addComplex(id, defaultValue, Optional.of(validator), Optional.of(stringifier), Optional.of(destringifier), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addComplex(
+		Identifier id,
+		Object defaultValue,
+		Function<Object, String> stringifier,
+		Function<String, Object> destringifier,
+		String description,
+		String category,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addComplex(id, defaultValue, Optional.empty(), Optional.of(stringifier), Optional.of(destringifier), description, id.getPath(), category, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static boolean addComplex(
+		Identifier id,
+		Object defaultValue,
+		Function<Object, String> stringifier,
+		Function<String, Object> destringifier,
+		String description,
+		boolean needsWorldRestart,
+		int permissionLvl,
+		boolean clientOnly)
+	{
+		return addComplex(id, defaultValue, Optional.empty(), Optional.of(stringifier), Optional.of(destringifier), description, id.getPath(), DEFAULT_CATEGORY, needsWorldRestart, permissionLvl, clientOnly);
+	}
+
+	public static void loadOrCreateConfigFile(String configName, boolean skipClientOnly)
 	{
 		File configFile = getConfigPath(configName);
 		if (configFile == null) return;
@@ -59,157 +472,26 @@ public final class Config
 
 		if (configFile.exists())
 		{
-			loadConfig(configFilePath, clazz);
+			loadConfigFromFile(configFilePath, skipClientOnly);
 		}
 		else
 		{
-			createConfig(configFilePath, clazz, true);
+			createConfigFile(configFilePath, true, skipClientOnly);
 		}
 	}
 
-	public static void save(String configName, Class<?> clazz)
+	public static void save(String configName)
+	{
+		save(configName, false);
+	}
+
+	public static void save(String configName, boolean skipClientOnly)
 	{
 		File configFile = getConfigPath(configName);
 		if (configFile == null) return;
 
 		Path configFilePath = Paths.get(configFile.toURI());
-		createConfig(configFilePath, clazz, false);
-	}
-
-	public static boolean isComplexType(Field field)
-	{
-		Class<?> fieldType = field.getType();
-
-		boolean isComplex = ((fieldType != int.class) &&
-							 (fieldType != float.class) &&
-							 (fieldType != boolean.class) &&
-							 (fieldType != String.class) &&
-							 (!fieldType.isEnum()));
-
-		return isComplex;
-	}
-
-	public static boolean isValidSetting(Field field)
-	{
-		return isValidSetting(field, false);
-	}
-
-	public static boolean isValidSetting(Field field, boolean forUI)
-	{
-		Class<?> settingsClass = field.getDeclaringClass();
-
-		// Check default value field.
-		String defaultValueName = field.getName() + "Default";
-
-		try
-		{
-			Field defaultValueField = settingsClass.getField(defaultValueName);
-			if (!Modifier.isStatic(defaultValueField.getModifiers()) ||
-				!Modifier.isFinal(defaultValueField.getModifiers()) ||
-				(defaultValueField.getType() != field.getType()))
-				return false;
-		}
-		catch (NoSuchFieldException ex)
-		{
-			return false;
-		}
-
-		// Check additional UI requirements.
-		ConfigSetting annotation = field.getAnnotation(ConfigSetting.class);
-		if (forUI && ((annotation == null) || annotation.descriptionKey().trim().isEmpty())) return false;
-
-		// Primitive types done.
-		if (!isComplexType(field)) return true;
-
-		// Check if complex type has load and save methods.
-		if (!getLoadSave(field).isPresent()) return false;
-
-		return true;
-	}
-
-	public static Field[] getSettingFieldsSortedByCategory(Class<?> clazz)
-	{
-		Field[] fields = clazz.getFields();
-
-		// Sort the fields by category. If a field has no annotation the default category is used.
-		// Non-static and final fields are filtered out.
-		fields = Arrays.stream(fields)
-			.filter((field) -> (Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers())))
-			.sorted((a, b) -> {
-				ConfigSetting annotationA = a.getAnnotation(ConfigSetting.class);
-				ConfigSetting annotationB = b.getAnnotation(ConfigSetting.class);
-				String categoryA = (annotationA != null && !annotationA.category().isEmpty()) ? annotationA.category() : DEFAULT_CATEGORY;
-				String categoryB = (annotationB != null && !annotationB.category().isEmpty()) ? annotationB.category() : DEFAULT_CATEGORY;
-
-				return categoryA.compareTo(categoryB);
-			}).toArray(Field[]::new);
-
-		return fields;
-	}
-
-	/**
-	 * Assumes the passed field was already successfully validated.
-	 */
-	public static Object getDefaultValue(Field field)
-	{
-		Class<?> settingsClass = field.getDeclaringClass();
-		String defaultValueName = field.getName() + "Default";
-
-		try
-		{
-			Field defaultValueField = settingsClass.getField(defaultValueName);
-			Object defaultValue = defaultValueField.get(null);
-
-			return defaultValue;
-		}
-		catch (NoSuchFieldException | IllegalAccessException ex)
-		{
-			return null;
-		}
-	}
-
-	/**
-	 * Assumes the passed field was already successfully validated.
-	 */
-	public static Method getValidator(Field field)
-	{
-		Class<?> settingsClass = field.getDeclaringClass();
-		String fieldName = field.getName();
-		String validatorName = fieldName + "Validator";
-
-		try
-		{
-			Method validator = settingsClass.getMethod(validatorName, field.getType());
-
-			return validator;
-		}
-		catch (NoSuchMethodException e)
-		{
-			return null;
-		}
-	}
-
-	public static Optional<StorageMethods> getLoadSave(Field field)
-	{
-		Class<?> fieldType = field.getType();
-		Class<?> settingType = field.getDeclaringClass();
-		String loadMethodName = field.getName() + "Load";
-		String saveMethodName = field.getName() + "Save";
-
-		try
-		{
-			Method loadMethod = settingType.getMethod(loadMethodName, String.class);
-			if (!Modifier.isStatic(loadMethod.getModifiers()) || (loadMethod.getReturnType() != fieldType)) return Optional.empty();
-
-			Method saveMethod = settingType.getMethod(saveMethodName, fieldType);
-			if (!Modifier.isStatic(saveMethod.getModifiers()) || (saveMethod.getReturnType() != String.class)) return Optional.empty();
-
-			return Optional.of(new StorageMethods(loadMethod, saveMethod));
-		}
-		catch (NoSuchMethodException e)
-		{
-			return Optional.empty();
-		}
+		createConfigFile(configFilePath, false, skipClientOnly);
 	}
 
 	private static File getConfigPath(String configName)
@@ -224,142 +506,80 @@ public final class Config
 			configDir = new File(gameDir.getCanonicalPath(), "config");
 			if (!configDir.exists())
 			{
-				if (!configDir.mkdir()) return null;
+				if (!configDir.mkdir())
+				{
+					LOG.error("Creating config directory failed. ({})", configDir);
+					return null;
+				}
 			}
 		}
 		catch (IOException ex)
 		{
+			LOG.error("Config file path could not be found.");
 			return null;
 		}
 
-		File configFile = new File(configDir, configName + ".cfg");
-
-		return configFile;
+		return new File(configDir, configName + ".cfg");
 	}
 
-	private static void createConfig(Path file, Class<?> clazz, boolean initToDefaults)
+	private static void createConfigFile(Path file, boolean initToDefaults, boolean skipClientOnly)
 	{
 		StringBuilder builder = new StringBuilder();
-		ConfigSetting annotation;
+		// Sort the entries by the key, this way the ordering in the config file does not change all the time.
+		var sortedEntries = registry.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey)).toList();
 
-		Field[] fields = getSettingFieldsSortedByCategory(clazz);
-
-		for (Field field : fields)
+		for (var entry : sortedEntries)
 		{
-			if (!isValidSetting(field)) continue;
+			var configValue = entry.getValue();
 
-			annotation = field.getAnnotation(ConfigSetting.class);
-			if (initToDefaults) setToDefault(field);
+			if (skipClientOnly && configValue.clientOnly) continue;	// No need to write clientOnly settings into config file on the dedicated server.
+			if (initToDefaults) configValue.setDefaultValue();
 
-			if (isComplexType(field))
-			{
-				appendComplexTypeValue(field, annotation, builder);
-			}
-			else
-			{
-				appendPrimitiveTypeValue(field, annotation, builder);
-			}
+			appendConfigValue(entry.getKey(), configValue, builder);
 		}
 
 		try
 		{
 			Files.write(file, builder.toString().getBytes());
 		}
-		catch (IOException e) {}
+		catch (IOException ignored)
+		{
+			LOG.error("Writing config to disk failed. ({})", file);
+		}
 	}
 
-	/**
-	 * Assumes the passed field was already successfully validated.
-	 */
-	private static void appendPrimitiveTypeValue(Field field, ConfigSetting annotation, StringBuilder builder)
+	private static void appendConfigValue(Identifier id, ConfigSetting setting, StringBuilder builder)
 	{
-		Object value = null;
+		if (setting.isInvalid()) setting.setDefaultValue();
 
-		try
+		if (!setting.description.trim().isEmpty())
 		{
-			value = field.get(null);
-
-			// :FIELD_SAVE_VALIDATION
-			// If the field has a validator and the fields value is not valid, set the field to the default value.
-			// The default value can technically also be invalid but at that point there's is no way to resolve this.
-			Method validator = getValidator(field);
-			if ((validator != null) && (!(boolean)validator.invoke(null, value)))
-			{
-				setToDefault(field);
-				value = field.get(null);
-			}
-		}
-		catch (IllegalAccessException | InvocationTargetException e)
-		{
-			return;
+			builder.append("#");
+			builder.append(setting.description);
+			builder.append("\n");
 		}
 
-		appendComment(builder, annotation);
-
-		builder.append(field.getName());
+		builder.append(id);
 		builder.append("=");
-		builder.append(value);
+
+		if (setting.isComplex())
+		{
+			builder.append(setting.stringify());
+		}
+		else
+		{
+			builder.append(setting.value);
+		}
+
 		builder.append("\n");
 	}
 
-	/**
-	 * Assumes the passed field was already successfully validated.
-	 */
-	private static void appendComplexTypeValue(Field field, ConfigSetting annotation, StringBuilder builder)
-	{
-		try
-		{
-			Object value = field.get(null);
-			// :FIELD_SAVE_VALIDATION
-			Method validator = getValidator(field);
-			if ((validator != null) && (!(boolean)validator.invoke(null, value)))
-			{
-				setToDefault(field);
-				value = field.get(null);
-			}
 
-			StorageMethods storage = getLoadSave(field).get();
-			String valueString = (String)storage.save.invoke(null, value);
-
-			appendComment(builder, annotation);
-
-			builder.append(field.getName());
-			builder.append("=");
-			builder.append(valueString);
-			builder.append("\n");
-		}
-		catch (IllegalAccessException | InvocationTargetException ex) {}
-	}
-
-	private static void appendComment(StringBuilder builder, ConfigSetting annotation)
-	{
-		if (annotation != null && !annotation.descriptionKey().isEmpty())
-		{
-			builder.append("#");
-			builder.append(annotation.description());
-			builder.append("\n");
-		}
-	}
-
-	/**
-	 * Assumes the passed field was already successfully validated.
-	 */
-	private static void setToDefault(Field field)
-	{
-		Object defaultValue = getDefaultValue(field);
-
-		try
-		{
-			field.set(null, defaultValue);
-			// The validator is called here not to perform any validation, but to allow the validator to
-			// perform any other tasks it might have besides validation.
-			Method validator = getValidator(field);
-			if (validator != null) validator.invoke(null, defaultValue);
-		}
-		catch (IllegalAccessException | InvocationTargetException e) {}
-	}
-
-	private static void loadConfig(Path file, Class<?> clazz)
+	// The skipClientOnlyOnWritingConfigFile flag might be confusing at first glance. If not all settings
+	// are found when parsing a config file, the config file gets rewritten with the parsed settings and
+	// default values for those that were missing. Because clientOnly settings are not stored in the config
+	// file on dedicated servers, the flag needs to be carried through here!
+	private static void loadConfigFromFile(Path file, boolean skipClientOnlyOnWritingConfigFile)
 	{
 		List<String> lines;
 
@@ -369,14 +589,15 @@ public final class Config
 		}
 		catch (IOException ex)
 		{
+			LOG.error("Reading config from disk failed. ({})", file);
 			return;
 		}
 
 		String[] components;
-		String settingName;
+		Identifier settingId;
 		String settingValue;
-		Field settingField;
-		ArrayList<Field> loadedSettings = Lists.newArrayList();
+		int parsedSettingsCount = 0;
+		boolean parseError = false;
 
 		for (String line : lines)
 		{
@@ -386,127 +607,159 @@ public final class Config
 			components = line.split("=");
 			if (components.length != 2) continue;
 
-			settingName = components[0];
+			settingId = Identifier.parse(components[0]);
 			settingValue = components[1];
 
-			try
+			if (registry.containsKey(settingId))
 			{
-				settingField = clazz.getField(settingName);
-				if (!isValidSetting(settingField)) continue;
+				var setting = registry.get(settingId);
 
-				if (isComplexType(settingField))
+				try
 				{
-					if(!loadComplexValue(settingField, settingValue)) continue;
+					setting.value = switch (setting.valueType)
+					{
+						case Int -> Integer.parseInt(settingValue);
+						case Float -> Float.parseFloat(settingValue);
+						case Boolean -> Boolean.parseBoolean(settingValue);
+						case String -> settingValue;
+						case Complex -> setting.destringify(settingValue);
+					};
 				}
-				else
+				catch (Exception _)
 				{
-					if (!loadPrimitiveValue(settingField, settingValue)) continue;
+					parseError = true;
+					LOG.error("Error while parsing setting {}. Using default. Line was: {}.", settingId, line);
+					setting.setDefaultValue();
 				}
 
-				loadedSettings.add(settingField);
+				if (setting.isInvalid())
+				{
+					parseError = true;
+					LOG.error("Error while parsing setting {}. Value {} is invalid. Using default. Line was: {}.", settingId, settingValue, line);
+					setting.setDefaultValue();
+				}
+
+				parsedSettingsCount++;
 			}
-			catch (NoSuchFieldException e) {}
-		}
-
-		// Set uninitialized setting fields to their default values, in case not all of them were loaded from file.
-
-		Field[] fields = clazz.getFields();
-		boolean settingsMissingInFile = false;
-
-		for (Field field : fields)
-		{
-			if (loadedSettings.contains(field) || !isValidSetting(field)) continue;
-			setToDefault(field);
-			settingsMissingInFile = true;
 		}
 
 		// Rewrite the config file if there were settings missing during loading.
 		// One possible reason for this happening is an old config file.
-		if (settingsMissingInFile) createConfig(file, clazz, false);
+		if (parseError || parsedSettingsCount != registry.size()) createConfigFile(file, false, skipClientOnlyOnWritingConfigFile);
 	}
 
-	private static boolean loadPrimitiveValue(Field field, String valueString)
+	/**
+	 *
+	 * Writes the values of all non client-only settings, the player has the appropriate permission lvl for, into the passed in list.
+	 * This is used for changing settings on a server remotely.
+	 */
+	public static void writeServerSettings(boolean toRemoteServer, List<ConfigValue> configValues, Player player)
 	{
-		Class valueType = field.getType();
-		Object value;
+		var activeRegistry = (toRemoteServer) ? serverRegistry : registry;
 
-		if (valueType == int.class)
+		for (var registryEntry : activeRegistry.entrySet())
 		{
-			try
-			{
-				value = Integer.parseInt(valueString);
-			}
-			catch (NumberFormatException ex)
-			{
-				return false;
-			}
-		}
-		else if (valueType == float.class)
-		{
-			try
-			{
-				value = Float.parseFloat(valueString);
-			}
-			catch (NumberFormatException ex)
-			{
-				return false;
-			}
-		}
-		else if (valueType == boolean.class)
-		{
-			value = Boolean.parseBoolean(valueString);
-		}
-		else if (valueType == String.class)
-		{
-			value = valueString;
-		}
-		else if (valueType.isEnum())
-		{
-			try
-			{
-				value = Enum.valueOf(valueType, valueString);
-			}
-			catch (IllegalArgumentException ex)
-			{
-				return false;
-			}
-		}
-		else
-		{
-			return false;
-		}
+			var id = registryEntry.getKey();
+			var configSetting = registryEntry.getValue();
 
-		try
-		{
-			Method validator = getValidator(field);
-			if ((validator != null) && (!(boolean)validator.invoke(null, value))) return false;
+			var requiredPermissionLevel = PermissionLevel.byId(configSetting.permissionLvl);
+			var requiredPermission = new Permission.HasCommandLevel(requiredPermissionLevel);
 
-			field.set(null, value);
+			// :BROKEN_PERMISSIONS
+			if (configSetting.clientOnly || (configSetting.permissionLvl > 0 && !player.permissions().hasPermission(requiredPermission))) continue;
 
-			return true;
-		}
-		catch (IllegalAccessException | InvocationTargetException ex)
-		{
-			return false;
+			configValues.add(new ConfigValue(id, configSetting.value));
 		}
 	}
 
-	private static boolean loadComplexValue(Field field, String valueString)
+	/**
+	 * Reads the values of all non client-only settings, the player has the appropriate permission lvl for, from the passed in list.
+	 * It is assumed that the buffer was filled by calling {@link Config#writeServerSettings(boolean, List, Player)} and that the players
+	 * permissions did not change between both calls. Those settings are stored in a separate server-only registry.
+	 * This is used for changing settings on a server remotely.
+	 */
+	public static void readServerSettings(boolean fromRemoteServer, List<ConfigValue> configValues, Player player)
 	{
-		try
-		{
-			StorageMethods storage = getLoadSave(field).get();
-			Object loadedValue = storage.load.invoke(null, valueString);
-			Method validator = getValidator(field);
-			if ((validator != null) && (!(boolean)validator.invoke(null, loadedValue))) return false;
+		// Keep received server settings in a different registry in order to separate them from local settings, in case the player
+		// decides to play singleplayer with the same client install. Otherwise, the server settings will get written into the local
+		// config file, possibly changing those for local play in an undesired ways. This is only relevant while being connected
+		// either to a dedicated server or an integrated one, that is not the players machine, that has been opened for LAN.
+		var activeRegistry = (fromRemoteServer) ? serverRegistry : registry;
 
-			field.set(null, loadedValue);
-
-			return true;
-		}
-		catch (IllegalAccessException | InvocationTargetException ex)
+		for (var configValue : configValues)
 		{
-			return false;
+			if (!activeRegistry.containsKey(configValue.id)) continue;
+
+			var setting = activeRegistry.get(configValue.id);
+			var requiredPermissionLevel = PermissionLevel.byId(setting.permissionLvl);
+			var requiredPermission = new Permission.HasCommandLevel(requiredPermissionLevel);
+
+			//:BROKEN_PERMISSIONS
+			if (setting.permissionLvl > 0 && !player.permissions().hasPermission(requiredPermission)) continue;
+
+			setting.value = configValue.value;
+
+			if (setting.isInvalid()) setting.setDefaultValue();
 		}
+	}
+
+	public static void reset()
+	{
+		registry.clear();
+	}
+
+	public static final StreamCodec<FriendlyByteBuf, List<ConfigValue>> LIST_STREAM_CODEC = new StreamCodec<FriendlyByteBuf, List<ConfigValue>>()
+	{
+		@Override
+		public List<ConfigValue> decode(FriendlyByteBuf input)
+		{
+			return input.readCollection(ArrayList::new, ConfigValue.STREAM_CODEC);
+		}
+
+		@Override
+		public void encode(FriendlyByteBuf output, List<ConfigValue> values)
+		{
+			output.writeCollection(values, ConfigValue.STREAM_CODEC);
+		}
+	};
+
+	public record ConfigValue(Identifier id, Object value)
+	{
+		public static final StreamCodec<FriendlyByteBuf, ConfigValue> STREAM_CODEC = new StreamCodec<FriendlyByteBuf, ConfigValue>()
+		{
+			@Override
+			public ConfigValue decode(FriendlyByteBuf input)
+			{
+				var id = input.readIdentifier();
+				var setting = registry.get(id);
+
+				Object value = switch (setting.valueType)
+				{
+					case Int ->  input.readInt();
+					case Float -> input.readFloat();
+					case Boolean -> input.readBoolean();
+					case String -> input.readUtf();
+					case Complex -> setting.destringify(input.readUtf());
+				};
+
+				return new ConfigValue(id, value);
+			}
+
+			@Override
+			public void encode(FriendlyByteBuf output, ConfigValue configValue)
+			{
+				output.writeIdentifier(configValue.id);
+				var setting = registry.get(configValue.id);
+
+				switch (setting.valueType)
+				{
+					case Int -> output.writeInt((int)configValue.value);
+					case Float -> output.writeFloat((float)configValue.value);
+					case Boolean -> output.writeBoolean((boolean)configValue.value);
+					case String -> output.writeUtf((String)configValue.value);
+					case Complex -> output.writeUtf(setting.stringifier.get().apply(configValue.value));
+				}
+			}
+		};
 	}
 }

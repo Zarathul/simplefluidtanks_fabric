@@ -1,6 +1,7 @@
 {
-  "ambientocclusion": false,
-  "textures": {
-    "particle": "simplefluidtanks:block/tank"
-  }
+	"parent": "minecraft:block/cube_all",
+	"ambientocclusion": false,
+	"textures": {
+		"all": "simplefluidtanks:block/tank"
+	}
 }

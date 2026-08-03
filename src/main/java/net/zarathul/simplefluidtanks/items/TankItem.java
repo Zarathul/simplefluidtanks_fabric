@@ -4,7 +4,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -28,28 +28,25 @@ public class TankItem extends BlockItem
 	private static final String toolTipKey = "item." + SimpleFluidTanks.MOD_ID + "." + SimpleFluidTanks.TANK_ITEM_NAME + ".tooltip";
 	private static final String toolTipDetailsKey = "item." + SimpleFluidTanks.MOD_ID + "." + SimpleFluidTanks.TANK_ITEM_NAME + ".tooltip_details";
 
-	public TankItem()
+	public TankItem(ResourceKey<Item> id)
 	{
-		super(SimpleFluidTanks.blockTank, new Item.Properties()
-				.stacksTo(64)
-				.tab(SimpleFluidTanks.creativeTab));
+		super(SimpleFluidTanks.blockTank, new Item.Properties().setId(id).stacksTo(64));
 	}
 
-	@Override
 	@Environment(EnvType.CLIENT)
 	public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag tooltipFlag)
 	{
-		long windowHandle = Minecraft.getInstance().getWindow().getWindow();
+		long windowHandle = Minecraft.getInstance().getWindow().handle();
 		int leftShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_LEFT_SHIFT);
 		int rightShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_RIGHT_SHIFT);
 
 		if (leftShiftState == GLFW.GLFW_PRESS || rightShiftState == GLFW.GLFW_PRESS)
 		{
-			tooltip.addAll(Utils.multiLineTranslate(toolTipDetailsKey, Settings.bucketsPerTank));
+			tooltip.addAll(Utils.multiLineTranslate(toolTipDetailsKey, Settings.bucketsPerTank()));
 		}
 		else
 		{
-			tooltip.add(new TranslatableComponent(toolTipKey));
+			tooltip.add(Component.translatable(toolTipKey));
 		}
 	}
 }

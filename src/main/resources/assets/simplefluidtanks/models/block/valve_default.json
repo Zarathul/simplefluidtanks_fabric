@@ -1,0 +1,29 @@
+{
+	"parent": "minecraft:block/cube_all",
+	"textures": {
+		"particle": "simplefluidtanks:block/valve",
+		"down": "simplefluidtanks:block/valve",
+		"up": "simplefluidtanks:block/valve_grate",
+		"north": "simplefluidtanks:block/valve_io",
+		"east": "simplefluidtanks:block/valve",
+		"south": "simplefluidtanks:block/valve",
+		"west": "simplefluidtanks:block/valve"
+	},
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [ 75, 135, 0 ],
+			"translation": [ 0, 2.5, 0],
+			"scale": [ 0.375, 0.375, 0.375 ]
+		},
+		"firstperson_righthand": {
+			"rotation": [ 0, 135, 0 ],
+			"translation": [ 0, 0, 0 ],
+			"scale": [ 0.40, 0.40, 0.40 ]
+		},
+		"firstperson_lefthand": {
+			"rotation": [ 0, 135, 0 ],
+			"translation": [ 0, 0, 0 ],
+			"scale": [ 0.40, 0.40, 0.40 ]
+		}
+	}
+}

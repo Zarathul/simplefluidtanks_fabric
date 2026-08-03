@@ -1,7 +1,7 @@
 package net.zarathul.simplemods.api.fluid;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BucketItem;
@@ -183,7 +183,7 @@ public class FluidHelper
 	private static Item getBucketForFluid(Fluid fluid)
 	{
 		// TODO: Find a better way to do this
-		if (FLUID_TO_BUCKET.isEmpty()) Registry.FLUID.forEach(x -> FLUID_TO_BUCKET.put(x, x.getBucket()));
+		if (FLUID_TO_BUCKET.isEmpty()) BuiltInRegistries.FLUID.forEach(x -> FLUID_TO_BUCKET.put(x, x.getBucket()));
 
 		return FLUID_TO_BUCKET.get(fluid);
 	}
@@ -191,7 +191,7 @@ public class FluidHelper
 	private static boolean isBucket(Item item)
 	{
 		// TODO: Find a better way to do this
-		if (FLUID_TO_BUCKET.isEmpty()) Registry.FLUID.forEach(x -> FLUID_TO_BUCKET.put(x, x.getBucket()));
+		if (FLUID_TO_BUCKET.isEmpty()) BuiltInRegistries.FLUID.forEach(x -> FLUID_TO_BUCKET.put(x, x.getBucket()));
 
 		return FLUID_TO_BUCKET.containsValue(item);
 	}

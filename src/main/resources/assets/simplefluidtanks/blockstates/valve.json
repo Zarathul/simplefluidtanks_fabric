@@ -1,7 +1,159 @@
 {
-  "variants": {
-    "": {
-      "model": "simplefluidtanks:block/valve"
-    }
-  }
+	"multipart": [
+		{
+			"_comment" : "NORTH",
+			"apply" : { "model" : "simplefluidtanks:block/valve" }
+		},
+		{
+			"_comment" : "SOUTH",
+			"apply" : { "model" : "simplefluidtanks:block/valve", "uvlock" : true, "y" : 180 }
+		},
+		{
+			"_comment" : "EAST",
+			"apply" : { "model" : "simplefluidtanks:block/valve", "uvlock" : true, "y" : 90 }
+		},
+		{
+			"_comment" : "WEST",
+			"apply" : { "model" : "simplefluidtanks:block/valve", "uvlock" : true, "y" : 270 }
+		},
+		{
+			"_comment" : "DOWN",
+			"apply" : { "model" : "simplefluidtanks:block/valve", "uvlock" : true, "x" : 90 }
+		},
+		{
+			"_comment" : "UP",
+			"apply" : { "model" : "simplefluidtanks:block/valve_grate", "uvlock" : true, "x" : 270 }
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : false },
+					{ "facing" : "north" }
+				]
+			},
+			"apply" : {
+				"model" : "simplefluidtanks:block/valve_io"
+			}
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : false },
+					{ "facing" : "south" }
+				]
+			},
+			"apply" : {
+				"model" : "simplefluidtanks:block/valve_io",
+				"y" : 180
+			}
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : false },
+					{ "facing" : "east" }
+				]
+			},
+			"apply" : {
+				"model" : "simplefluidtanks:block/valve_io",
+				"y" : 90
+			}
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : false },
+					{ "facing" : "west" }
+				]
+			},
+			"apply" : {
+				"model" : "simplefluidtanks:block/valve_io",
+				"y" : 270
+			}
+		},
+		{
+			"_comment" : "NORTH",
+			"when" : { "connected" : true },
+			"apply" : { "model" : "simplefluidtanks:block/valve_io" }
+		},
+		{
+			"_comment" : "SOUTH",
+			"when" : { "connected" : true },
+			"apply" : { "model" : "simplefluidtanks:block/valve_io", "uvlock" : true, "y" : 180 }
+		},
+		{
+			"_comment" : "EAST",
+			"when" : { "connected" : true },
+			"apply" : { "model" : "simplefluidtanks:block/valve_io", "uvlock" : true, "y" : 90 }
+		},
+		{
+			"_comment" : "WEST",
+			"when" : { "connected" : true },
+			"apply" : { "model" : "simplefluidtanks:block/valve_io", "uvlock" : true, "y" : 270 }
+		},
+		{
+			"_comment" : "DOWN",
+			"when" : { "connected" : true },
+			"apply" : { "model" : "simplefluidtanks:block/valve_io", "uvlock" : true, "x" : 90 }
+		},
+		{
+			"_comment" : "UP",
+			"when" : { "connected" : true },
+			"apply" : { "model" : "simplefluidtanks:block/valve_io", "uvlock" : true, "x" : 270 }
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : true },
+					{ "connected_north" : true }
+				]
+			},
+			"apply" : { "model" : "simplefluidtanks:block/valve_grate" }
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : true },
+					{ "connected_south" : true }
+				]
+			},
+			"apply" : { "model" : "simplefluidtanks:block/valve_grate", "uvlock" : true, "y" : 180 }
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : true },
+					{ "connected_east" : true }
+				]
+			},
+			"apply" : { "model" : "simplefluidtanks:block/valve_grate", "uvlock" : true, "y" : 90 }
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : true },
+					{ "connected_west" : true }
+				]
+			},
+			"apply" : { "model" : "simplefluidtanks:block/valve_grate", "uvlock" : true, "y" : 270 }
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : true },
+					{ "connected_down" : true }
+				]
+			},
+			"apply" : { "model" : "simplefluidtanks:block/valve_grate", "uvlock" : true, "x" : 90 }
+		},
+		{
+			"when" : {
+				"AND" : [
+					{ "connected" : true },
+					{ "connected_up" : true }
+				]
+			},
+			"apply" : { "model" : "simplefluidtanks:block/valve_grate", "uvlock" : true, "x" : 270 }
+		}
+	]
 }

@@ -11,7 +11,7 @@ public class Directions
 	/**
 	 * Maps vanilla minecraft direction values to bitflags.
 	 */
-	public static final ImmutableMap<Direction, Integer> sidesToBitFlagsMappings = new ImmutableMap.Builder()
+	public static final ImmutableMap<Direction, Integer> sidesToBitFlagsMappings = ImmutableMap.<Direction, Integer>builder()
 			.put(Direction.DOWN, 1)
 			.put(Direction.UP, 2)
 			.put(Direction.NORTH, 4)
