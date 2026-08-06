@@ -6,6 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -27,7 +29,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
@@ -37,6 +38,8 @@ import net.zarathul.simplefluidtanks.blocks.entities.ValveBlockEntity;
 import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplemods.api.fluid.FluidHelper;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.BiConsumer;
 
 /**
  * Represents a valve in the mods multiblock structure.
@@ -104,24 +107,17 @@ public class ValveBlock extends WrenchableBlock
 	@Override
 	public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack items)
 	{
-		if (!level.isClientSide() && (placer != null))
+		if (!level.isClientSide())
 		{
-			Direction facing = placer.getDirection().getOpposite();
-
 			ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
 
 			if (valveEntity != null)
 			{
-				level.setBlockEntity(valveEntity);
-				valveEntity.setFacing(facing);
 				valveEntity.formMultiblock();
-				level.getChunkAt(pos).markUnsaved();
-
-				if (valveEntity.hasTanks())
-				{
-					BlockState newState = getStateFromEntity(valveEntity);
-					level.setBlockAndUpdate(pos, newState);
-				}
+			}
+			else
+			{
+				SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
 			}
 		}
 
@@ -154,6 +150,10 @@ public class ValveBlock extends WrenchableBlock
 						1.0f, 1.0f, level.getRandom().nextLong()));
 				}
 			}
+			else
+			{
+				SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
+			}
 		}
 
 		if (FluidHelper.isFluidContainerItem(player.getItemInHand(hand))) return InteractionResult.SUCCESS;
@@ -181,50 +181,52 @@ public class ValveBlock extends WrenchableBlock
 			return signalStrength;
 		}
 
+		SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
 		return 0;
+	}
+
+	@Override
+	public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player)
+	{
+		handleDestruction(level, pos, state);
+		return super.playerWillDestroy(level, pos, state, player);
 	}
 
 	@Override
 	public void destroy(LevelAccessor level, BlockPos pos, BlockState state)
 	{
-		if (!level.isClientSide())
-		{
-			if (state.getBlock() == SimpleFluidTanks.blockValve)
-			{
-				// disband the multiblock if the valve is mined/destroyed
-				ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
-
-				if (valveEntity != null)
-				{
-					valveEntity.disbandMultiblock(pos);
-				}
-			}
-		}
-
+		var e = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
 		super.destroy(level, pos, state);
 	}
 
 	@Override
-	protected void handleToolWrenchClick(Level world, BlockPos pos, Player player, ItemStack equippedItemStack)
+	protected void onExplosionHit(BlockState state, ServerLevel level, BlockPos pos, Explosion explosion, BiConsumer<ItemStack, BlockPos> onHit)
+	{
+		handleDestruction(level, pos, state);
+		super.onExplosionHit(state, level, pos, explosion, onHit);
+	}
+
+	@Override
+	protected void handleToolWrenchClick(Level level, BlockPos pos, Player player, ItemStack equippedItemStack)
 	{
 		// On sneak use: disband the multiblock | On use: rebuild the multiblock
 
-		ValveBlockEntity valveEntity = Utils.getBlockEntityAt(world, ValveBlockEntity.class, pos);
+		ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
+		if (valveEntity == null)
+		{
+			SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
+			return;
+		}
 
 		if (player.isCrouching())
 		{
-			if (valveEntity != null)
-			{
-				valveEntity.disbandMultiblock(pos);
-			}
-
-			world.destroyBlock(pos, true);
+			valveEntity.disbandMultiblock(pos);
+			level.destroyBlock(pos, true);
 		}
-		else if (valveEntity != null)
+		else
 		{
 			// rebuild the tank
 			valveEntity.formMultiblock();
-			world.setBlockAndUpdate(pos, getStateFromEntity(valveEntity));
 		}
 	}
 
@@ -234,9 +236,25 @@ public class ValveBlock extends WrenchableBlock
 		return simpleCodec(props -> new ValveBlock(props.blockId()));
 	}
 
-	private BlockState getStateFromEntity(ValveBlockEntity blockEntity)
+	private void handleDestruction(Level level, BlockPos pos, BlockState state)
 	{
-		return defaultBlockState()
+		if (!level.isClientSide())
+		{
+			ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
+
+			if (valveEntity == null)
+			{
+				SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
+				return;
+			}
+
+			valveEntity.disbandMultiblock(pos);
+		}
+	}
+
+	public static BlockState getStateFromEntity(ValveBlockEntity blockEntity, BlockState oldState)
+	{
+		return oldState
 			.setValue(CONNECTED, true)
 			.setValue(CONNECTED_NORTH, blockEntity.isFacingTank(Direction.NORTH))
 			.setValue(CONNECTED_SOUTH, blockEntity.isFacingTank(Direction.SOUTH))
@@ -244,5 +262,17 @@ public class ValveBlock extends WrenchableBlock
 			.setValue(CONNECTED_WEST,  blockEntity.isFacingTank(Direction.WEST))
 			.setValue(CONNECTED_DOWN,  blockEntity.isFacingTank(Direction.DOWN))
 			.setValue(CONNECTED_UP,    blockEntity.isFacingTank(Direction.UP));
+	}
+
+	public static BlockState getDisconnectedState(BlockState oldState)
+	{
+		return oldState
+			.setValue(CONNECTED,       false)
+			.setValue(CONNECTED_NORTH, false)
+			.setValue(CONNECTED_SOUTH, false)
+			.setValue(CONNECTED_EAST,  false)
+			.setValue(CONNECTED_WEST,  false)
+			.setValue(CONNECTED_DOWN,  false)
+			.setValue(CONNECTED_UP,    false);
 	}
 }

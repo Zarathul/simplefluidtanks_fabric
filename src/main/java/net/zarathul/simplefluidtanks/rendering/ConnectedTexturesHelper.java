@@ -4,6 +4,19 @@ import net.minecraft.core.Direction;
 
 public class ConnectedTexturesHelper
 {
+	public static int getTextureIndex(Direction direction, boolean[] connections)
+	{
+		return switch (direction)
+		{
+			case DOWN -> getDownTextureIndex(connections);
+			case UP -> getUpTextureIndex(connections);
+			case NORTH -> getNorthTextureIndex(connections);
+			case SOUTH -> getSouthTextureIndex(connections);
+			case WEST -> getWestTextureIndex(connections);
+			case EAST -> getEastTextureIndex(connections);
+		};
+	}
+
 	public static int getEastTextureIndex(boolean[] connections)
 	{
 		int  texture = 0;
@@ -286,19 +299,19 @@ public class ConnectedTexturesHelper
 		}
 		else if (connections[Direction.EAST.get3DDataValue()] && connections[Direction.SOUTH.get3DDataValue()] && connections[Direction.NORTH.get3DDataValue()])
 		{
-			texture = 12; // topBottomLeftTexture
+			texture = 13; // topBottomRightTexture
 		}
 		else if (connections[Direction.SOUTH.get3DDataValue()] && connections[Direction.EAST.get3DDataValue()] && connections[Direction.WEST.get3DDataValue()])
 		{
-			texture = 7; // leftRightTopTexture
+			texture = 6; // leftRightBottomTexture
 		}
 		else if (connections[Direction.WEST.get3DDataValue()] && connections[Direction.SOUTH.get3DDataValue()] && connections[Direction.NORTH.get3DDataValue()])
 		{
-			texture = 13; // topBottomRightTexture
+			texture = 12; // topBottomLeftTexture
 		}
 		else if (connections[Direction.NORTH.get3DDataValue()] && connections[Direction.WEST.get3DDataValue()] && connections[Direction.EAST.get3DDataValue()])
 		{
-			texture = 6; // leftRightBottomTexture
+			texture = 7; // leftRightTopTexture
 		}
 		else if (connections[Direction.EAST.get3DDataValue()] && connections[Direction.WEST.get3DDataValue()])
 		{
@@ -310,35 +323,35 @@ public class ConnectedTexturesHelper
 		}
 		else if (connections[Direction.EAST.get3DDataValue()] && connections[Direction.SOUTH.get3DDataValue()])
 		{
-			texture = 14; // topLeftTexture
+			texture = 3; // bottomRightTexture
 		}
 		else if (connections[Direction.SOUTH.get3DDataValue()] && connections[Direction.WEST.get3DDataValue()])
 		{
-			texture = 15; // topRightTexture
+			texture = 2; // bottomLeftTexture
 		}
 		else if (connections[Direction.WEST.get3DDataValue()] && connections[Direction.NORTH.get3DDataValue()])
 		{
-			texture = 3; // bottomRightTexture
+			texture = 14; // topLeftTexture
 		}
 		else if (connections[Direction.NORTH.get3DDataValue()] && connections[Direction.EAST.get3DDataValue()])
 		{
-			texture = 2; // bottomLeftTexture
+			texture = 15; // topRightTexture
 		}
 		else if (connections[Direction.EAST.get3DDataValue()])
 		{
-			texture = 4; // leftTexture
+			texture = 9; // rightTexture
 		}
 		else if (connections[Direction.WEST.get3DDataValue()])
 		{
-			texture = 9; // rightTexture
+			texture = 4; // leftTexture
 		}
 		else if (connections[Direction.SOUTH.get3DDataValue()])
 		{
-			texture = 10; // topTexture
+			texture = 1; // bottomTexture
 		}
 		else if (connections[Direction.NORTH.get3DDataValue()])
 		{
-			texture = 1; // bottomTexture
+			texture = 10; // topTexture
 		}
 
 		return texture;
@@ -354,19 +367,19 @@ public class ConnectedTexturesHelper
 		}
 		else if (connections[Direction.EAST.get3DDataValue()] && connections[Direction.SOUTH.get3DDataValue()] && connections[Direction.NORTH.get3DDataValue()])
 		{
-			texture = 12; // topBottomLeftTexture
+			texture = 13; // topBottomRightTexture
 		}
 		else if (connections[Direction.SOUTH.get3DDataValue()] && connections[Direction.EAST.get3DDataValue()] && connections[Direction.WEST.get3DDataValue()])
 		{
-			texture = 6; // leftRightBottomTexture
+			texture = 7; // leftRightTopTexture
 		}
 		else if (connections[Direction.WEST.get3DDataValue()] && connections[Direction.SOUTH.get3DDataValue()] && connections[Direction.NORTH.get3DDataValue()])
 		{
-			texture = 13; // topBottomRightTexture
+			texture = 12; // topBottomLeftTexture
 		}
 		else if (connections[Direction.NORTH.get3DDataValue()] && connections[Direction.WEST.get3DDataValue()] && connections[Direction.EAST.get3DDataValue()])
 		{
-			texture = 7; // leftRightTopTexture
+			texture = 6; // leftRightBottomTexture
 		}
 		else if (connections[Direction.EAST.get3DDataValue()] && connections[Direction.WEST.get3DDataValue()])
 		{
@@ -378,35 +391,35 @@ public class ConnectedTexturesHelper
 		}
 		else if (connections[Direction.EAST.get3DDataValue()] && connections[Direction.SOUTH.get3DDataValue()])
 		{
-			texture = 2; // bottomLeftTexture
+			texture = 15; // topRightTexture
 		}
 		else if (connections[Direction.SOUTH.get3DDataValue()] && connections[Direction.WEST.get3DDataValue()])
 		{
-			texture = 3; // bottomRightTexture
+			texture = 14; // topLeftTexture
 		}
 		else if (connections[Direction.WEST.get3DDataValue()] && connections[Direction.NORTH.get3DDataValue()])
 		{
-			texture = 15; // topRightTexture
+			texture = 2; // bottomLeftTexture
 		}
 		else if (connections[Direction.NORTH.get3DDataValue()] && connections[Direction.EAST.get3DDataValue()])
 		{
-			texture = 14; // topLeftTexture
+			texture = 3; // bottomRightTexture
 		}
 		else if (connections[Direction.EAST.get3DDataValue()])
 		{
-			texture = 4; // leftTexture
+			texture = 9; // rightTexture
 		}
 		else if (connections[Direction.WEST.get3DDataValue()])
 		{
-			texture = 9; // rightTexture
+			texture = 4; // leftTexture
 		}
 		else if (connections[Direction.SOUTH.get3DDataValue()])
 		{
-			texture = 1; // bottomTexture
+			texture = 10; // topTexture
 		}
 		else if (connections[Direction.NORTH.get3DDataValue()])
 		{
-			texture = 10; // topTexture
+			texture = 1; // bottomTexture
 		}
 
 		return texture;

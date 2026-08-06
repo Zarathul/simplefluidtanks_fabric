@@ -1,6 +1,5 @@
 {
 	"parent": "minecraft:block/cube_all",
-	"ambientocclusion": false,
 	"textures": {
 		"all": "simplefluidtanks:block/tank"
 	}

@@ -3,11 +3,12 @@ package net.zarathul.simplefluidtanks.blocks;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -15,7 +16,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.TankBlockEntity;
@@ -23,12 +23,15 @@ import net.zarathul.simplefluidtanks.blocks.entities.ValveBlockEntity;
 import net.zarathul.simplefluidtanks.common.Utils;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.BiConsumer;
+
 /**
  * Represents a tank in the mods multiblock structure.
  */
 public class TankBlock extends WrenchableBlock
 {
-	private static final BooleanProperty WAS_WRENCHED = BooleanProperty.create("was_wrenched");
+	public static final BooleanProperty WAS_WRENCHED = BooleanProperty.create("was_wrenched");
+	public static final BooleanProperty RERENDER_TRIGGER = BooleanProperty.create("rerender_trigger");
 
 	public TankBlock(ResourceKey<Block> id)
 	{
@@ -54,48 +57,39 @@ public class TankBlock extends WrenchableBlock
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder)
 	{
-		builder.add(WAS_WRENCHED);
+		builder.add(WAS_WRENCHED, RERENDER_TRIGGER);
 	}
 
 	@Override
 	public @Nullable BlockState getStateForPlacement(BlockPlaceContext context)
 	{
-		return defaultBlockState().setValue(WAS_WRENCHED, false);
+		return defaultBlockState().setValue(WAS_WRENCHED, false).setValue(RERENDER_TRIGGER, false);
 	}
 
-	//	@Override
-//	protected boolean propagatesSkylightDown(BlockState state)
-//	{
-//		// TODO: now way to get the block entity
-////		BlockEntity entity = blockGetter.getBlockEntity(pos);
-////		TankBlockEntity tankEntity = (entity != null) ? (TankBlockEntity)entity : null;
-////
-////		return (tankEntity == null || tankEntity.getFillLevel() == 0);
+	@Override
+	protected boolean propagatesSkylightDown(BlockState state)
+	{
+		// Always propagate since there is no more way to check the BlockEntity.
+		return true;
+//		BlockEntity entity = blockGetter.getBlockEntity(pos);
+//		TankBlockEntity tankEntity = (entity != null) ? (TankBlockEntity)entity : null;
+//
+//		return (tankEntity == null || tankEntity.getFillLevel() == 0);
 //		return super.propagatesSkylightDown(state);
-//	}
+	}
 
 	@Override
-	public void destroy(LevelAccessor level, BlockPos pos, BlockState state)
+	public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player)
 	{
-		if (!level.isClientSide())
-		{
-			if (state.getBlock() == SimpleFluidTanks.blockTank)
-			{
-				// if the block was wrenched, don't disband the multiblock
-				if (!state.getValue(WAS_WRENCHED))
-				{
-					// get the valve the tank is connected to and disband the multiblock
-					ValveBlockEntity valveEntity = Utils.getValve(level, pos);
+		handleDestruction(level, pos, state);
+		return super.playerWillDestroy(level, pos, state, player);
+	}
 
-					if (valveEntity != null)
-					{
-						valveEntity.disbandMultiblock(pos);
-					}
-				}
-			}
-		}
-
-		super.destroy(level, pos, state);
+	@Override
+	protected void onExplosionHit(BlockState state, ServerLevel level, BlockPos pos, Explosion explosion, BiConsumer<ItemStack, BlockPos> onHit)
+	{
+		handleDestruction(level, pos, state);
+		super.onExplosionHit(state, level, pos, explosion, onHit);
 	}
 
 	@Override
@@ -106,11 +100,22 @@ public class TankBlock extends WrenchableBlock
 		if (player.isCrouching())
 		{
 			TankBlockEntity tankEntity = Utils.getBlockEntityAt(world, TankBlockEntity.class, pos);
+			if (tankEntity == null)
+			{
+				SimpleFluidTanks.log.error("Missing TankBlockEntity at {}.", pos.toShortString());
+				return;
+			}
+
 			ValveBlockEntity valveEntity = null;
 
-			if (tankEntity != null && tankEntity.isPartOfTank())
+			if (tankEntity.isPartOfTank())
 			{
 				valveEntity = tankEntity.getValve();
+				if (valveEntity == null)
+				{
+					SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}.", tankEntity.getValveCoords().toShortString());
+				}
+
 				// set the WAS_WRENCHED property to prevent the multiblock from disbanding
 				var state = world.getBlockState(pos);
 				world.setBlock(pos, state.setValue(WAS_WRENCHED, true), Block.UPDATE_NONE);
@@ -129,5 +134,22 @@ public class TankBlock extends WrenchableBlock
 	protected MapCodec<? extends BaseEntityBlock> codec()
 	{
 		return simpleCodec(props -> new TankBlock(props.blockId()));
+	}
+
+	private void handleDestruction(Level level, BlockPos pos, BlockState state)
+	{
+		if (!level.isClientSide())
+		{
+			// Only disband the multiblock if the block was not wrenched.
+			if (!state.getValue(WAS_WRENCHED))
+			{
+				ValveBlockEntity valveEntity = Utils.getValve(level, pos);
+
+				if (valveEntity != null)
+				{
+					valveEntity.disbandMultiblock(pos);
+				}
+			}
+		}
 	}
 }

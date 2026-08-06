@@ -33,6 +33,8 @@ import org.jspecify.annotations.Nullable;
 import java.util.*;
 import java.util.Map.Entry;
 
+// TODO: Check what is still actually needed here, like facing.
+
 /**
  * Holds {@link BlockEntity} data for {@link ValveBlock}s,
  */
@@ -80,11 +82,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	 */
 	private BasicAStar aStar;
 	
-	/**
-	 * The facing of the valve when it's not part of a multiblock.
-	 */
-	private Direction facing;
-
 	public ValveBlockEntity(final BlockPos pos, final BlockState state)
 	{
 		super(SimpleFluidTanks.blockEntityTypeValve, pos, state);
@@ -92,7 +89,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		tankPriorities = ArrayListMultimap.create();
 		tankFacingSides = -1;
 		linkedTankCount = 0;
-		facing = Direction.NORTH;
 
 		fluid = FluidStack.empty();
 		capacity = 0;
@@ -113,7 +109,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 
 		writeTankPrioritiesToNBT(output);
 		output.putByte(TAG_TANK_FACING_SIDES, tankFacingSides);
-		output.putByte(TAG_FACING, (byte)facing.get3DDataValue());
 	}
 
 	@Override
@@ -127,7 +122,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		readTankPrioritiesFromNBT(input);
 		linkedTankCount = (input.contains(TAG_LINKED_TANK_COUNT)) ? input.getIntOr(TAG_LINKED_TANK_COUNT, 0) : Math.max(tankPriorities.size() - 1, 0);
 		tankFacingSides = input.getByteOr(TAG_TANK_FACING_SIDES, (byte)0);
-		facing = Direction.from3DDataValue(input.getByteOr(TAG_FACING, (byte)0));
 	}
 
 	@Override
@@ -147,33 +141,16 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	{
 		super.setChanged();
 
-		if (level == null) return;
-
-		BlockState state = getBlockState();
-		level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_ALL);
-	}
-
-	/**
-	 * Gets the facing of the valve.
-	 * 
-	 * @return The direction the valve is facing in.
-	 */
-	public Direction getFacing()
-	{
-		return facing;
-	}
-
-	/**
-	 * Sets the facing of the valve.
-	 * 
-	 * @param facing
-	 * One of the {@link Direction} values (values on the y axis are ignored).
-	 */
-	public void setFacing(Direction facing)
-	{
-		if (facing.getAxis() != Direction.Axis.Y)
+		if (level != null)
 		{
-			this.facing = facing;
+			// To get the BlockStateModel to consistently rerender the block state MUST change.
+			BlockState oldState = level.getBlockState(worldPosition);
+			BlockState newState = (hasTanks()) ?
+								  ValveBlock.getStateFromEntity(this, oldState) :
+								  ValveBlock.getDisconnectedState(oldState);
+
+			level.setBlockAndUpdate(worldPosition, newState);
+			level.sendBlockUpdated(worldPosition, oldState, newState, Block.UPDATE_ALL);
 		}
 	}
 
@@ -274,7 +251,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	 * The TankBlock or ValveBlock located at <code>ignorePos</code> will not get it's BlockState updated.
 	 *
 	 * @param ignorePos
-	 * Tank- or ValveBlock at this position will not get it's BlackState updated.
+	 * Tank- or ValveBlock at this position will not get it's BlockState updated.
 	 */
 	public void disbandMultiblock(BlockPos ignorePos)
 	{
@@ -316,7 +293,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 
 		if (!suppressBlockUpdates && (!worldPosition.equals(ignorePos)))
 		{
-//			sync();
 			setChanged();
 		}
 	}
@@ -345,7 +321,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		setFluid(fluidBackup);
 		distributeFluidToTanks(true);
 
-//		sync();
 		setChanged();
 	}
 
@@ -394,7 +369,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 
 			if (tankEntity != null)
 			{
-//				tankEntity.sync();
 				tankEntity.setChanged();
 			}
 		}
@@ -1030,7 +1004,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		}
 		else
 		{
-			// this valve is also considered a unlinked tank as long as it has no associated tanks
+			// this valve is also considered an unlinked tank as long as it has no associated tanks
 			return (block.equals(worldPosition) && tankPriorities.isEmpty());
 		}
 
@@ -1226,7 +1200,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	private void fluidChanged(FluidChange change)
 	{
 		distributeFluidToTanks();
-//		if (change.isType()) sync();
 		setChanged();
 	}
 

@@ -1,15 +1,6 @@
 {
+	"parent": "simplefluidtanks:block/template_face_north",
 	"textures": {
-		"io": "simplefluidtanks:block/valve_io",
-		"particle": "simplefluidtanks:block/valve"
-	},
-	"elements": [
-		{
-			"from": [0, 0, 0],
-			"to": [16, 16, 0],
-			"faces": {
-				"north": { "uv": [0, 0, 16, 16], "texture": "#io" }
-			}
-		}
-	]
+		"texture": "simplefluidtanks:block/valve_io"
+	}
 }

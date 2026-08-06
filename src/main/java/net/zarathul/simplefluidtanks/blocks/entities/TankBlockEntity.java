@@ -67,6 +67,7 @@ public class TankBlockEntity extends BlockEntity
 		valveCoords = null;
 		connections = new boolean[6];
 		textures = new int[6];
+		Arrays.fill(textures, -1);
 	}
 
 	private static final String TAG_FILL_LEVEL = "fill_level";
@@ -83,8 +84,6 @@ public class TankBlockEntity extends BlockEntity
 	@Override
 	protected void saveAdditional(ValueOutput output)
 	{
-		super.saveAdditional(output);
-
 		output.putByte(TAG_FILL_LEVEL, (byte)fillLevel);
 		output.putBoolean(TAG_IS_PART_OF_TANK, isPartOfTank);
 
@@ -107,8 +106,6 @@ public class TankBlockEntity extends BlockEntity
 	@Override
 	protected void loadAdditional(ValueInput input)
 	{
-		super.loadAdditional(input);
-
 		fillLevel = input.getByteOr(TAG_FILL_LEVEL, (byte)0);
 		isPartOfTank = input.getBooleanOr(TAG_IS_PART_OF_TANK, false);
 
@@ -146,10 +143,14 @@ public class TankBlockEntity extends BlockEntity
 	{
 		super.setChanged();
 
-		if (level == null) return;
-
-		BlockState state = getBlockState();
-		level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_ALL);
+		if (level != null)
+		{
+			// To get the BlockStateModel to consistently rerender the block state MUST change. Flipping a dummy boolean block state property does the trick.
+			BlockState oldState = level.getBlockState(worldPosition);
+			BlockState newState = oldState.setValue(TankBlock.RERENDER_TRIGGER, !oldState.getValue(TankBlock.RERENDER_TRIGGER));
+			level.setBlockAndUpdate(worldPosition, newState);
+			level.sendBlockUpdated(worldPosition, oldState, newState, Block.UPDATE_ALL);
+		}
 	}
 
 	/**
@@ -227,7 +228,7 @@ public class TankBlockEntity extends BlockEntity
 	 * Sets the {@link TankBlock}s current fill level.
 	 * 
 	 * @param value
-	 * The {@link TankBlock}s fill level.
+	 * A value between {@code 0} abd {@link SimpleFluidTanks#MAX_FILL_LEVEL} (default: >=0<16).
 	 * @param forceBlockUpdate
 	 * Specifies if a block update should be forced.
 	 * @return <code>true</code> if the fill level has changed, otherwise <code>false</code>.
@@ -236,16 +237,15 @@ public class TankBlockEntity extends BlockEntity
 	{
 		value = Mth.clamp(value, 0, SimpleFluidTanks.MAX_FILL_LEVEL);
 
-		boolean levelChanged = (value != fillLevel);
+		boolean fillLevelChanged = (value != fillLevel);
 		fillLevel = value;
 
-		if (levelChanged || forceBlockUpdate)
+		if (fillLevelChanged || forceBlockUpdate)
 		{
-//			sync();
 			setChanged();
 		}
 
-		return levelChanged;
+		return fillLevelChanged;
 	}
 
 	/**
@@ -299,6 +299,17 @@ public class TankBlockEntity extends BlockEntity
 		}
 
 		return pos.equals(valveCoords);
+	}
+
+	/**
+	 * The coordinates of the connected {@link ValveBlock}.
+	 *
+	 * @return
+	 * The {@link ValveBlock}s coordinates, if the {@link TankBlock} is connected to one, otherwise {@code null}.
+	 */
+	public BlockPos getValveCoords()
+	{
+		return valveCoords;
 	}
 
 	/**
@@ -372,15 +383,14 @@ public class TankBlockEntity extends BlockEntity
 	 */
 	public void disconnect(boolean suppressBlockUpdates)
 	{
-		isPartOfTank = false;
 		fillLevel = 0;
+		isPartOfTank = false;
 		valveCoords = null;
 		Arrays.fill(connections, false);
 		Arrays.fill(textures, -1);
 
 		if (!suppressBlockUpdates)
 		{
-//			sync();
 			setChanged();
 		}
 	}
@@ -391,11 +401,21 @@ public class TankBlockEntity extends BlockEntity
 	 * @param direction
 	 * One of the {@link Direction} values.
 	 * @return
-	 * An index for the {@link ConnectedTexturesHelper} array, or <c>-1</c> if there is no texture set for
+	 * A texture index provided by {@link ConnectedTexturesHelper}, or <c>-1</c> if there is no texture set for
 	 * the specified side.
 	 */
 	public int getTextureIndex(Direction direction)
 	{
 		return textures[direction.get3DDataValue()];
+	}
+
+	/**
+	 * Get all texture indexes.
+	 * @return
+	 * An array of texture indexes provided by {@link ConnectedTexturesHelper}. The index corresponds to {@link Direction#get3DDataValue()}.
+	 */
+	public int[] getTextureIndexes()
+	{
+		return textures;
 	}
 }

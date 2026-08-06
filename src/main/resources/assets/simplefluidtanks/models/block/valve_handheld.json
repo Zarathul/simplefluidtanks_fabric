@@ -1,7 +1,7 @@
 {
 	"parent": "minecraft:block/cube_all",
 	"textures": {
-		"particle": "simplefluidtanks:block/valve",
+		"particle": "simplefluidtanks:block/valve_grate",
 		"down": "simplefluidtanks:block/valve",
 		"up": "simplefluidtanks:block/valve_grate",
 		"north": "simplefluidtanks:block/valve_io",

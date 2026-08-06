@@ -1,6 +1,6 @@
 {
 	"model": {
 		"type": "minecraft:model",
-		"model": "simplefluidtanks:block/tank_default"
+		"model": "simplefluidtanks:block/tank_handheld"
 	}
 }

@@ -48,23 +48,23 @@ public final class Utils
 	/**
 	 * Gets the {@link BlockEntity} at the specified coordinates, cast to the specified type.
 	 * 
-	 * @param world
-	 * The world.
-	 * @param tileType
+	 * @param level
+	 * The level.
+	 * @param entityType
 	 * The type the {@link BlockEntity} should be cast to.
 	 * @param pos
 	 * The coordinates of the {@link BlockEntity}.
 	 * @return The {@link BlockEntity} or <code>null</code> if no {@link BlockEntity} was found or the types didn't match.
 	 */
- 	public static <T extends BlockEntity> T getBlockEntityAt(LevelAccessor world, Class<T> tileType, BlockPos pos)
+ 	public static <T extends BlockEntity> T getBlockEntityAt(LevelAccessor level, Class<T> entityType, BlockPos pos)
 	{
-		if (world != null && tileType != null && pos != null)
+		if (level != null && entityType != null && pos != null)
 		{
-			BlockEntity tile = world.getBlockEntity(pos);
+			BlockEntity blockEntity = level.getBlockEntity(pos);
 
-			if (tile != null && tile.getClass() == tileType)
+			if ((blockEntity != null) && (blockEntity.getClass() == entityType))
 			{
-				return (T) tile;
+				return (T) blockEntity;
 			}
 		}
 
@@ -91,7 +91,6 @@ public final class Utils
 			if (tankEntity != null)
 			{
 				ValveBlockEntity valveEntity = tankEntity.getValve();
-
 				return valveEntity;
 			}
 		}
@@ -159,7 +158,7 @@ public final class Utils
 	 * @param fillPercentage
 	 * The fill percentage.
 	 * @return
-	 * A value between 0 and {@code BakedTankModel.FLUID_LEVELS} (inclusive).
+	 * A value between 0 and {@link SimpleFluidTanks#MAX_FILL_LEVEL} (inclusive).
 	 */
 	public static int getFluidLevel(int fillPercentage)
 	{

@@ -12,7 +12,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.Fluid;
-import net.zarathul.simplefluidtanks.mixin.BucketItemAccessor;
 
 import java.util.HashMap;
 
@@ -115,7 +114,7 @@ public class FluidHelper
 	private static boolean drainBucket(Player player, InteractionHand hand, IFluidHandler handler)
 	{
 		BucketItem heldBucket = (BucketItem)player.getItemInHand(hand).getItem();
-		Fluid bucketFluid = ((BucketItemAccessor)heldBucket).getContents();
+		Fluid bucketFluid = heldBucket.getContent();
 		FluidStack handlerFluid = handler.getFluid();
 
 		// Try to fill one bucket worth of fluid into the handler, if there is enough room. The type of
