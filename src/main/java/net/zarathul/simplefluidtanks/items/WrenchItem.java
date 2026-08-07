@@ -8,10 +8,9 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
+import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.common.Utils;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -21,8 +20,8 @@ import java.util.List;
  */
 public class WrenchItem extends Item
 {
-	private static final String toolTipKey = "item." + SimpleFluidTanks.MOD_ID + "." + SimpleFluidTanks.WRENCH_ITEM_NAME + ".tooltip";
-	private static final String toolTipDetailsKey = "item." + SimpleFluidTanks.MOD_ID + "." + SimpleFluidTanks.WRENCH_ITEM_NAME + ".tooltip_details";
+	private static final String toolTipKey = "item." + SimpleFluidTanks.MOD_ID + "." + BlocksAndItems.WRENCH_ITEM_NAME + ".tooltip";
+	private static final String toolTipDetailsKey = "item." + SimpleFluidTanks.MOD_ID + "." + BlocksAndItems.WRENCH_ITEM_NAME + ".tooltip_details";
 
 	public WrenchItem(ResourceKey<Item> id)
 	{
@@ -30,7 +29,7 @@ public class WrenchItem extends Item
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag tooltipFlag)
+	public void addTooltip(ItemStack stack, TooltipContext context, TooltipFlag tooltipFlag, List<Component> tooltip)
 	{
 		long windowHandle = Minecraft.getInstance().getWindow().handle();
 		int leftShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_LEFT_SHIFT);

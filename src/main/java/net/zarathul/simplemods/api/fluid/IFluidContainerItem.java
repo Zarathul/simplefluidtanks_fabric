@@ -1,67 +1,60 @@
 package net.zarathul.simplemods.api.fluid;
 
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
-import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 
 public interface IFluidContainerItem
 {
 	default
-	FluidStack getFluid(ItemStack stack)
+	FluidStack drain(ItemStack itemStack, FluidStack drainFluidStack)
 	{
-		var component = stack.get(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT);
-		if (component == null) return FluidStack.empty();
+		FluidContainerComponent dataComponent = itemStack.get(FluidApi.FLUID_CONTAINER_COMPONENT);
+		if (dataComponent == null) return FluidStack.empty();
 
-		FluidStack fluid = FluidStack.from(component);
+		FluidStack itemFluidStack = FluidStack.from(dataComponent);
 
-		return fluid;
-	}
+		int drainAmount = (dataComponent.singleBucketMode()) ? FluidStack.BUCKET_VOLUME : drainFluidStack.getAmount();
+		if (itemFluidStack.isEmpty() || !itemFluidStack.isSameFluid(drainFluidStack) || (drainAmount <= 0)) return FluidStack.empty();
 
-	int getCapacity();
+		FluidStack drainedFluid = itemFluidStack.copy();
+		drainedFluid.setAmount(Math.min(itemFluidStack.getAmount(), drainAmount));
+		itemFluidStack.changeAmount(-drainedFluid.getAmount());
 
-	default
-	FluidStack drain(ItemStack stack, FluidStack drainFluid)
-	{
-		FluidStack fluid = getFluid(stack);
-		int drainAmount = drainFluid.getAmount();
-
-		if (fluid.isEmpty() || !fluid.isSameFluid(drainFluid) || (drainAmount <= 0)) return FluidStack.empty();
-
-		FluidStack drainedFluid = fluid.copy();
-		drainedFluid.setAmount(Math.min(fluid.getAmount(), drainAmount));
-		fluid.changeAmount(-drainedFluid.getAmount());
-
-		stack.set(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(fluid.getAmount(), getCapacity(), fluid.getRegistryKey()));
+		itemStack.set(FluidApi.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(itemFluidStack.getAmount(), dataComponent.capacity(), itemFluidStack.getRegistryKey(), dataComponent.singleBucketMode()));
 
 		return drainedFluid;
 	}
 
 	default
-	int fill(ItemStack stack, FluidStack fillFluid)
+	int fill(ItemStack itemStack, FluidStack fillFluidStack)
 	{
-		if (fillFluid.isEmpty()) return 0;
+		FluidContainerComponent dataComponent = itemStack.get(FluidApi.FLUID_CONTAINER_COMPONENT);
 
-		FluidStack fluid = getFluid(stack);
-		int capacity = getCapacity();
+		if (fillFluidStack.isEmpty() || dataComponent == null) return 0;
 
-		if (fluid.isEmpty())
+		FluidStack itemFluidStack = FluidStack.from(dataComponent);
+		int itemCapacity = dataComponent.capacity();
+
+		if (itemFluidStack.isEmpty())
 		{
-			fluid = fillFluid.copy();
+			if (dataComponent.singleBucketMode()) itemCapacity = Math.min(itemCapacity, FluidStack.BUCKET_VOLUME);
+			itemFluidStack = fillFluidStack.copy();
 			// limit the stored fluid to the tanks capacity
-			if (!fluid.isEmpty()) fluid.setAmount(Math.min(fluid.getAmount(), capacity));
-			stack.set(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(fluid.getAmount(), capacity, fluid.getRegistryKey()));
+			if (!itemFluidStack.isEmpty()) itemFluidStack.setAmount(Math.min(itemFluidStack.getAmount(), itemCapacity));
+			itemStack.set(FluidApi.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(itemFluidStack.getAmount(), dataComponent.capacity(), itemFluidStack.getRegistryKey(), dataComponent.singleBucketMode()));
 
-			return fluid.getAmount();
+			return itemFluidStack.getAmount();
 		}
 
-		if (!fluid.isSameFluid(fillFluid)) return 0;
+		if (!itemFluidStack.isSameFluid(fillFluidStack)) return 0;
 
-		int remainingCapacity = capacity - fluid.getAmount();
-		int fillAmount = Math.min(remainingCapacity, fillFluid.getAmount());
+		int remainingCapacity = itemCapacity - itemFluidStack.getAmount();
+		if (dataComponent.singleBucketMode()) remainingCapacity = Math.min(remainingCapacity, FluidStack.BUCKET_VOLUME);
+
+		int fillAmount = Math.min(remainingCapacity, fillFluidStack.getAmount());
 		if (fillAmount > 0)
 		{
-			fluid.changeAmount(fillAmount);
-			stack.set(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(fluid.getAmount(), capacity, fluid.getRegistryKey()));
+			itemFluidStack.changeAmount(fillAmount);
+			itemStack.set(FluidApi.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(itemFluidStack.getAmount(), dataComponent.capacity(), itemFluidStack.getRegistryKey(), dataComponent.singleBucketMode()));
 		}
 
 		return fillAmount;

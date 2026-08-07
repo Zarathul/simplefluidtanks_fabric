@@ -3,7 +3,6 @@ package net.zarathul.simplefluidtanks.common;
 import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
@@ -17,6 +16,7 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
@@ -25,6 +25,7 @@ import net.zarathul.simplefluidtanks.blocks.entities.ValveBlockEntity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IllegalFormatException;
 import java.util.Locale;
 
 /**
@@ -124,10 +125,10 @@ public final class Utils
 	}
 
 	/**
-	 * Gets the localized formatted strings for the specified key and formatting arguments.
+	 * Gets the localized formatted components for the specified key and formatting arguments.
 	 *
 	 * @param key
-	 * The name of the key.
+	 * The localization key.
 	 * @param args
 	 * Formatting arguments.
 	 * @return
@@ -136,20 +137,46 @@ public final class Utils
 	public static ArrayList<Component> multiLineTranslate(String key, Object... args)
 	{
 		ArrayList<Component> components = new ArrayList<>();
-		Language I18N = Language.getInstance();
 
-		if ((key != null) && I18N.has(key))
+		String text = translate(key, args);
+		String[] lines = text.split("\\n");
+
+		for (String line : lines)
 		{
-			String text = I18n.get(key, args);
-			String[] lines = text.split("\\n");
-
-			for (String line : lines)
-			{
-				components.add(Component.literal(line));
-			}
+			components.add(Component.literal(line));
 		}
 
 		return components;
+	}
+
+	/**
+	 * Get the formatted localized string literal for the specified key and formatting arguments.
+	 *
+	 * @param key
+	 * The localization key.
+	 * @param args
+	 * Formatting arguments.
+	 * @return
+	 * The formatted, localized string. The key itself, if no localized string was found. Or the key with {@code " :: Format Error"} appended, if formatting failed.
+	 */
+	public static String translate(String key, Object... args)
+	{
+		Language I18N = Language.getInstance();
+		if ((key != null) && I18N.has(key))
+		{
+			String text = I18N.getOrDefault(key);
+
+			try
+			{
+				return String.format(text, args);
+			}
+			catch (IllegalFormatException _)
+			{
+				return key + " :: Format Error";
+			}
+		}
+
+		return key;
 	}
 	
 	/**
@@ -293,7 +320,7 @@ public final class Utils
 	public static boolean isWrenchItem(Item item)
 	{
 		// TODO: Add support for other wrenches or tools
-		return (item == SimpleFluidTanks.itemWrench/*
+		return (item == BlocksAndItems.itemWrench/*
 		|| (Utils.isInterfaceAvailable("cofh.api.item", "IToolHammer") && item instanceof IToolHammer)
 		|| (Utils.isInterfaceAvailable("blusunrize.immersiveengineering.api.tool", "ITool") && item instanceof ITool)
 		|| (Utils.isInterfaceAvailable("appeng.api.implementations.items", "IAEWrench") && item instanceof IAEWrench)*/);

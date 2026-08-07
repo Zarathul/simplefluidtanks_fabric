@@ -1,16 +1,19 @@
 package net.zarathul.simplemods.api.fluid;
 
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.zarathul.simplefluidtanks.Settings;
-import net.zarathul.simplefluidtanks.SimpleFluidTanks;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
 
 public abstract class FluidContainerItemBase extends Item implements IFluidContainerItem
 {
-	protected FluidContainerItemBase(Properties properties)
+	protected FluidContainerItemBase(Properties properties, int defaultCapacity)
 	{
-		super(properties.component(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(0, Settings.bucketsPerPortableTank(), FluidStack.empty().getRegistryKey())));
+		super(properties.component(FluidApi.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(0, 16000, FluidStack.empty().getRegistryKey(), false)));
 	}
 
 	@Override
@@ -22,14 +25,18 @@ public abstract class FluidContainerItemBase extends Item implements IFluidConta
 	@Override
 	public int getBarWidth(ItemStack stack)
 	{
-		var componentData = stack.get(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT);
-		if (componentData != null) return Mth.clamp(Math.round((componentData.amount() / (float)componentData.capacity()) * 13.0f), 0, 13);
+		FluidContainerComponent componentData = stack.get(FluidApi.FLUID_CONTAINER_COMPONENT);
+		if (componentData != null)
+		{
+			int fillLevel = Mth.clamp(Math.round((componentData.amount() / (float)componentData.capacity()) * 13.0f), 0, 13);
+			return fillLevel;
+		}
 		else return super.getBarWidth(stack);
 	}
 	@Override
 	public int getBarColor(ItemStack stack)
 	{
-		var componentData = stack.get(SimpleFluidTanks.FLUID_CONTAINER_COMPONENT);
+		FluidContainerComponent componentData = stack.get(FluidApi.FLUID_CONTAINER_COMPONENT);
 		if (componentData != null)
 		{
 			int capacity = componentData.capacity();
@@ -39,59 +46,29 @@ public abstract class FluidContainerItemBase extends Item implements IFluidConta
 		else return super.getBarColor(stack);
 	}
 
-//
-//	@Override
-//	public void onCraftedBy(ItemStack itemStack, Player player)
-//	{
-//		super.onCraftedBy(itemStack, player);
-//		initItemTag(itemStack);
-//	}
-//
-//	@Override
-//	public void onCraftedPostProcess(ItemStack itemStack, Level level)
-//	{
-//		super.onCraftedPostProcess(itemStack, level);
-//		initItemTag(itemStack);
-//	}
+	@Override
+	public InteractionResult use(Level level, Player player, InteractionHand hand)
+	{
+		if (!level.isClientSide() && !player.isCrouching())
+		{
+			ItemStack itemStack = player.getItemInHand(hand);
+			FluidContainerComponent component = itemStack.get(FluidApi.FLUID_CONTAINER_COMPONENT);
+			if (component != null)
+			{
+				// Cycle the fill mode between max, always drain/fill the maximum amount, and bucket, drain/fill one bucket at a time.
+				boolean newMode = !component.singleBucketMode();
+				itemStack.set(FluidApi.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(component.amount(), component.capacity(), component.fluidId(), newMode));
 
-//	@Override
-//	public boolean verifyTagAfterLoad(CompoundTag rootTag)
-//	{
-//		int capacity = getCapacity();
-//		CompoundTag tags = rootTag.getCompound("tag").get();
-//
-//		if (tags.isEmpty())
-//		{
-//			CompoundTag containerTag = new CompoundTag();
-//			FluidStack.empty().save(containerTag);
-//			tags.put(CONTAINER_TAG_NAME, containerTag);
-//			tags.putInt("Damage", capacity);
-//		}
-//		else
-//		{
-//			CompoundTag containerTag = tags.getCompound(CONTAINER_TAG_NAME).get();
-//			FluidStack fluid = FluidStack.load(containerTag);
-//			// Limit the fluid amount to the current capacity. This is necessary in case the capacity is lowered in the config.
-//			if (fluid.getAmount() > capacity)
-//			{
-//				fluid.setAmount(capacity);
-//				fluid.save(containerTag);
-//			}
-//
-//			// Update the damage value. This has to be done, in case the capacity was changed in the config.
-//			int damage = capacity - fluid.getAmount();
-//			damage = Math.max(damage, 1);
-//			tags.putInt("Damage", damage);
-//		}
-//
-//		return true;
-//	}
-//
-//	private static void initItemTag(ItemStack stack)
-//	{
-//		ValueOutput output = new TagValueOutput()
-//		CompoundTag tag = stack.getOrCreateTagElement(CONTAINER_TAG_NAME);
-//		FluidStack.empty().save(tag);
-//		stack.setDamageValue(Settings.bucketsPerPortableTank() * FluidStack.BUCKET_VOLUME);
-//	}
+				return InteractionResult.SUCCESS_SERVER;
+			}
+		}
+
+		return InteractionResult.SUCCESS;
+	}
+
+	@Override
+	public InteractionResult useOn(UseOnContext context)
+	{
+		return InteractionResult.PASS;
+	}
 }

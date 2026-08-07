@@ -26,27 +26,7 @@ public class FluidHelper
 		drain
 	}
 
-	public static class FluidHandlerInteractionResult
-	{
-		private final boolean success;
-		private final FluidHandlerInteraction interaction;
-
-		public FluidHandlerInteractionResult(boolean success, FluidHandlerInteraction interaction)
-		{
-			this.success = success;
-			this.interaction = interaction;
-		}
-
-		public boolean isSuccess()
-		{
-			return success;
-		}
-
-		public FluidHandlerInteraction getInteraction()
-		{
-			return interaction;
-		}
-	}
+	public record FluidHandlerInteractionResult(boolean success, FluidHandlerInteraction interaction) {  }
 
 	public static FluidHandlerInteractionResult InteractWithFluidHandler(Player player, InteractionHand hand, IFluidHandler handler)
 	{
@@ -134,47 +114,26 @@ public class FluidHelper
 	private static boolean fillFluidContainerItem(ItemStack stack, IFluidHandler handler)
 	{
 		FluidStack handlerFluid = handler.getFluid();
+		IFluidContainerItem heldItem = (IFluidContainerItem)stack.getItem();
 
-		// Try to fill the item from the container either if the item is empty to begin with, or if
-		// the item and the container contain the same type of fluid.
-		if (!handlerFluid.isEmpty())
-		{
-			IFluidContainerItem heldItem = (IFluidContainerItem)stack.getItem();
-			FluidStack heldItemFluid = heldItem.getFluid(stack);
+		int itemFillAmount = heldItem.fill(stack, handler.getFluid().copy());
+		if (itemFillAmount > 0) handler.drain(new FluidStack(handlerFluid.getFluid(), itemFillAmount));
 
-			if (heldItemFluid.isEmpty() || (heldItemFluid.isSameFluid(handlerFluid)))
-			{
-				int remainingItemCapacity = heldItem.getCapacity() - heldItemFluid.getAmount();
-				FluidStack drainedFluid = handler.drain(new FluidStack(handlerFluid.getFluid(), remainingItemCapacity));
-
-				if (!drainedFluid.isEmpty())
-				{
-					return (heldItem.fill(stack, drainedFluid) > 0);
-				}
-			}
-		}
-
-		return false;
+		return (itemFillAmount > 0);
 	}
 
 	private static boolean drainFluidContainerItem(ItemStack stack, IFluidHandler handler)
 	{
 		FluidStack handlerFluid = handler.getFluid();
 		IFluidContainerItem heldItem = (IFluidContainerItem)stack.getItem();
-		FluidStack heldItemFluid = heldItem.getFluid(stack);
 
-		// Try to drain the item into the container either if the container is empty to begin with, or if
-		// the container and the item contain the same type of fluid.
-		if (!heldItemFluid.isEmpty() && (handlerFluid.isEmpty() || heldItemFluid.isSameFluid(handlerFluid)))
-		{
-			int remainingHandlerCapacity = handler.getCapacity() - handlerFluid.getAmount();
-			FluidStack drainedFluid = heldItem.drain(stack, new FluidStack(heldItemFluid.getFluid(), remainingHandlerCapacity));
+		int remainingHandlerCapacity = handler.getCapacity() - handlerFluid.getAmount();
+		// If the handler is empty, it means it can accept any fluid type. Use the fluid type of the container in that case.
+		FluidStack drainableFluid = (handlerFluid.isEmpty()) ? FluidStack.getFluid(stack) : handlerFluid.copy();
+		drainableFluid.setAmount(remainingHandlerCapacity);
 
-			if (!drainedFluid.isEmpty())
-			{
-				return (handler.fill(drainedFluid) > 0);
-			}
-		}
+		FluidStack drainedFluid = heldItem.drain(stack, drainableFluid);
+		if (!drainedFluid.isEmpty()) return (handler.fill(drainedFluid) > 0);
 
 		return false;
 	}

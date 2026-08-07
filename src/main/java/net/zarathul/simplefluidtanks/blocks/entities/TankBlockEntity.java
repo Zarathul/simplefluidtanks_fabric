@@ -15,6 +15,7 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
@@ -60,14 +61,14 @@ public class TankBlockEntity extends BlockEntity
 	 */
 	public TankBlockEntity(final BlockPos pos, final BlockState state)
 	{
-		super(SimpleFluidTanks.blockEntityTypeTank, pos, state);
+		super(BlocksAndItems.blockEntityTypeTank, pos, state);
 
 		fillLevel = 0;
 		isPartOfTank = false;
 		valveCoords = null;
 		connections = new boolean[6];
 		textures = new int[6];
-		Arrays.fill(textures, -1);
+		Arrays.fill(textures, 0);
 	}
 
 	private static final String TAG_FILL_LEVEL = "fill_level";
@@ -387,7 +388,7 @@ public class TankBlockEntity extends BlockEntity
 		isPartOfTank = false;
 		valveCoords = null;
 		Arrays.fill(connections, false);
-		Arrays.fill(textures, -1);
+		Arrays.fill(textures, 0);
 
 		if (!suppressBlockUpdates)
 		{

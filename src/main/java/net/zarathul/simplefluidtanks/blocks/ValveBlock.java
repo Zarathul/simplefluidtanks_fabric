@@ -134,13 +134,13 @@ public class ValveBlock extends WrenchableBlock
 			if (valveEntity != null)
 			{
 				FluidHelper.FluidHandlerInteractionResult result = FluidHelper.InteractWithFluidHandler(player, hand, valveEntity);
-				if (result.isSuccess())
+				if (result.success())
 				{
 					Fluid fluid = valveEntity.getFluid().getFluid();
 					SoundEvent soundevent = (fluid == Fluids.LAVA) ?
-											(result.getInteraction() == FluidHelper.FluidHandlerInteraction.drain) ?
+											(result.interaction() == FluidHelper.FluidHandlerInteraction.drain) ?
 											SoundEvents.BUCKET_EMPTY_LAVA : SoundEvents.BUCKET_FILL_LAVA :
-											(result.getInteraction() == FluidHelper.FluidHandlerInteraction.drain) ?
+											(result.interaction() == FluidHelper.FluidHandlerInteraction.drain) ?
 											SoundEvents.BUCKET_EMPTY : SoundEvents.BUCKET_FILL;
 
 					((ServerPlayer)player).connection.send(new ClientboundSoundPacket(

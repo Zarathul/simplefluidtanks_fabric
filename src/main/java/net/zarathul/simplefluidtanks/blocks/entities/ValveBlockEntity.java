@@ -18,8 +18,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.Settings;
-import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
 import net.zarathul.simplefluidtanks.common.BasicAStar;
@@ -84,7 +84,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	
 	public ValveBlockEntity(final BlockPos pos, final BlockState state)
 	{
-		super(SimpleFluidTanks.blockEntityTypeValve, pos, state);
+		super(BlocksAndItems.blockEntityTypeValve, pos, state);
 
 		tankPriorities = ArrayListMultimap.create();
 		tankFacingSides = -1;
@@ -993,7 +993,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		
 		BlockState state = level.getBlockState(block);
 
-		if (state.getBlock() == SimpleFluidTanks.blockTank)
+		if (state.getBlock() == BlocksAndItems.blockTank)
 		{
 			TankBlockEntity tankEntity = Utils.getBlockEntityAt(level, TankBlockEntity.class, block);
 
@@ -1109,7 +1109,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	//
 	//	IFluidHandler
 	//
-
+ // TODO: Move to API as default implementation?
 	private FluidStack fluid;
 	private int capacity;
 

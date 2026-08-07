@@ -21,6 +21,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
+import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.TankBlockEntity;
 import net.zarathul.simplefluidtanks.common.Utils;
@@ -93,7 +94,7 @@ public class TankBlockStateModel extends WrapperBlockStateModel
 	{
 		if (tankSprites == null) init();
 
-		var optionalTankBlockEntity = level.getBlockEntity(pos, SimpleFluidTanks.blockEntityTypeTank);
+		var optionalTankBlockEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeTank);
 		if (optionalTankBlockEntity.isEmpty() || !optionalTankBlockEntity.get().isPartOfTank())
 		{
 			emitEmptyUnconnectedTank(emitter);
@@ -117,7 +118,7 @@ public class TankBlockStateModel extends WrapperBlockStateModel
 			int fillLevel = tankBlockEntity.getFillLevel();
 			float fillLevelFactor = Math.min((float)fillLevel / SimpleFluidTanks.MAX_FILL_LEVEL, 1f);
 
-			var tankBlockEntityAbove = level.getBlockEntity(pos.above(), SimpleFluidTanks.blockEntityTypeTank);
+			var tankBlockEntityAbove = level.getBlockEntity(pos.above(), BlocksAndItems.blockEntityTypeTank);
 			boolean cullFluidTop = (tankBlockEntityAbove.isPresent() && (tankBlockEntity.isPartOfSameTank(tankBlockEntityAbove.get())) && (tankBlockEntityAbove.get().getFillLevel() > 0));
 			final float epsilon = 0.00001f;		// TODO: Apply epsilon only to sides with frame on top to avoid the tiny blank line in between blocks
 
@@ -161,56 +162,6 @@ public class TankBlockStateModel extends WrapperBlockStateModel
 			emitter.shadeMode(ShadeMode.VANILLA);
 			emitter.emit();
 		}
-
-
-
-//		var tankSpriteId = Sheets.BLOCKS_MAPPER.apply(Utils.createModIdentifier("tank"));
-//		var tankSprite = mc.getAtlasManager().get(tankSpriteId);
-//
-//		var waterSpriteId = Sheets.BLOCKS_MAPPER.apply(Identifier.withDefaultNamespace("water_still"));
-//		var waterSprite = mc.getAtlasManager().get(waterSpriteId);
-//		int waterColor = BiomeColors.getAverageWaterColor(level, pos);
-//
-//		for (int i = 0; i < ModelHelper.NULL_FACE_ID; i++) {
-//			Direction face = ModelHelper.faceFromIndex(i);
-//
-////			if (cullTest.test(face)) {
-////				// Skip entire quad list if possible.
-////				continue;
-////			}
-//
-////			emitter.cullFace(face);
-//
-////			var waterMaterial = TextureMapping.getBlockTexture(Blocks.WATER);//.withForceTranslucent(true);
-//			var bakedWaterMaterial = new Material.Baked(waterSprite, false);
-//
-//			emitter.ambientOcclusion(TriState.FALSE);
-//			emitter.shadeMode(ShadeMode.VANILLA);
-//
-//			// Water
-//			ChunkSectionLayer layer = ChunkSectionLayer.byTransparency(Transparency.TRANSLUCENT);
-//			emitter.chunkLayer(layer);
-//			emitter.itemRenderType(Sheets.translucentBlockItemSheet());		// Sheets.cutoutBlockItemSheet()
-//
-//			emitter.square(face, 0f, 0f, 1f, 1f, 0.0001f);
-//			emitter.uv(0, waterSprite.getU0(), waterSprite.getV0());
-//			emitter.uv(1, waterSprite.getU0(), waterSprite.getV1());
-//			emitter.uv(2, waterSprite.getU1(), waterSprite.getV1());
-//			emitter.uv(3, waterSprite.getU1(), waterSprite.getV0());
-//			emitter.color(0, waterColor);
-//			emitter.color(1, waterColor);
-//			emitter.color(2, waterColor);
-//			emitter.color(3, waterColor);
-//			emitter.emit();
-//
-//			// Tank
-//			emitter.square(face, 0f, 0f, 1f, 1f, 0f);
-//			emitter.uv(0, tankSprite.getU0(), tankSprite.getV0());
-//			emitter.uv(1, tankSprite.getU0(), tankSprite.getV1());
-//			emitter.uv(2, tankSprite.getU1(), tankSprite.getV1());
-//			emitter.uv(3, tankSprite.getU1(), tankSprite.getV0());
-//			emitter.emit();
-//		}
 	}
 
 	private void emitEmptyUnconnectedTank(QuadEmitter emitter)
@@ -245,20 +196,4 @@ public class TankBlockStateModel extends WrapperBlockStateModel
 		var spriteId = Sheets.BLOCKS_MAPPER.apply(textureId);
 		return Minecraft.getInstance().getAtlasManager().get(spriteId);
 	}
-
-//
-//	private static int[] getTextureIndexes(BlockAndTintGetter level, BlockPos pos)
-//	{
-//
-//		return optionalTankBlockEntity.get().getTextureIndexes();
-//
-//		var tankBlockEntity = optionalTankBlockEntity.get();
-//
-//		for (int i = 0; i < ModelHelper.NULL_FACE_ID; i++)
-//		{
-//			textureIndexes[i] = tankBlockEntity.getTextureIndex(ModelHelper.faceFromIndex(i));
-//		}
-//
-//		return textureIndexes;
-//	}
 }
