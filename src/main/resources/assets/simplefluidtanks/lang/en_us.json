@@ -14,7 +14,7 @@
 	"item.simplefluidtanks.wrench.tooltip": "§7Hold §e§oshift §7for details.",
 	"item.simplefluidtanks.wrench.tooltip_details": "§7Used to instantly dismantle §btanks\n§7and §bvalves§7. Also used to add new\n§btanks §7to the multiblock structure.",
 	"item.simplefluidtanks.portable_tank": "Portable tank",
-	"item.simplefluidtanks.portable_tank.tooltip": "§7Contents: %s\n§7Amount: %s/%s\n§7FillMode: %s\n§7Hold §e§oshift §7for details.",
+	"item.simplefluidtanks.portable_tank.tooltip": "§7Contents: %s%s(%s)\n§7Amount: %s/%s\n§7FillMode: %s\n§7Hold §e§oshift §7for details.",
 	"item.simplefluidtanks.portable_tank.tooltip_max": "§7Max",
 	"item.simplefluidtanks.portable_tank.tooltip_single_bucket": "§7Bucket",
 	"item.simplefluidtanks.portable_tank.tooltip_details": "§7A small portable fluid tank.\n§7Hold §bsneak §7when using to fill,\n§7let go to drain.\n§9Holds up to §b%d §9buckets of fluid.",

@@ -50,8 +50,12 @@ public class PortableTankItem extends FluidContainerItemBase
 			FluidContainerComponent component = stack.get(FluidApi.FLUID_CONTAINER_COMPONENT);
 			if (component == null) return;
 
+			String fluidName = FluidApi.getFluidName(component.fluidId());
+
 			tooltip.addAll(Utils.multiLineTranslate(
 				TOOLTIP_KEY,
+				fluidName,
+				(!fluidName.isEmpty()) ? " " : "",	// Insert a space to make the tooltip look nicer, if getting a name was successful.
 				component.fluidId(),
 				Utils.getMetricFormattedNumber(component.amount(), "%.1f", "%d", "B"),
 				Utils.getMetricFormattedNumber(component.capacity(), "%.1f %s%s", "%d %s", "B"),

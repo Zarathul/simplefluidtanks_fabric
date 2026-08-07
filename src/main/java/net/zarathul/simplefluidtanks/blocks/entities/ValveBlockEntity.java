@@ -41,13 +41,6 @@ import java.util.Map.Entry;
 public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 {
 	/**
-	 * Holds the number of {@link TankBlock}s that are linked to this {@link ValveBlock}. 
-	 * (This is primarily used on the client side. This way the multimap containing the 
-	 * tank information does not have to be synced to clients).
-	 */
-	private int linkedTankCount;
-
-	/**
 	 * The fill priorities of all connected {@link TankBlock}s.
 	 */
 	private Multimap<Integer, BlockPos> tankPriorities;
@@ -88,16 +81,13 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 
 		tankPriorities = ArrayListMultimap.create();
 		tankFacingSides = -1;
-		linkedTankCount = 0;
 
 		fluid = FluidStack.empty();
 		capacity = 0;
 	}
 
 	private static final String TAG_FLUID_CAPACITY = "fluid_capacity";
-	private static final String TAG_LINKED_TANK_COUNT = "linked_tank_count";
 	private static final String TAG_TANK_FACING_SIDES = "tank_facing_sides";
-	private static final String TAG_FACING = "facing";
 
 	@Override
 	protected void saveAdditional(ValueOutput output)
@@ -120,7 +110,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		capacity = input.getIntOr(TAG_FLUID_CAPACITY, 0);
 
 		readTankPrioritiesFromNBT(input);
-		linkedTankCount = (input.contains(TAG_LINKED_TANK_COUNT)) ? input.getIntOr(TAG_LINKED_TANK_COUNT, 0) : Math.max(tankPriorities.size() - 1, 0);
 		tankFacingSides = input.getByteOr(TAG_TANK_FACING_SIDES, (byte)0);
 	}
 
@@ -233,17 +222,8 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	 */
 	public boolean hasTanks()
 	{
-		return linkedTankCount > 0;
-	}
-
-	/**
-	 * Gets the number of linked {@link TankBlock}s.
-	 * 
-	 * @return The number of linked {@link TankBlock}s.
-	 */
-	public int getLinkedTankCount()
-	{
-		return linkedTankCount;
+		// the ValveBlock also counts as a tank in the multiblock structure
+		return (tankPriorities.size() - 1) > 0;
 	}
 
 	/**
@@ -286,7 +266,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		}
 
 		tankPriorities.clear();
-		linkedTankCount = 0;
 		tankFacingSides = 0;
 		fluid = FluidStack.empty();
 		capacity = 0;
@@ -315,8 +294,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		updateOrphanedTanks();
 		updateTankFacingSides();
 
-		// the ValveBlock also counts as a tank in the multiblock structure
-		linkedTankCount = Math.max(tankPriorities.size() - 1, 0);
 		// redistribute the fluid
 		setFluid(fluidBackup);
 		distributeFluidToTanks(true);
@@ -1109,56 +1086,15 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	//
 	//	IFluidHandler
 	//
- // TODO: Move to API as default implementation?
+
 	private FluidStack fluid;
 	private int capacity;
 
-	public FluidStack getFluid()
-	{
-		return fluid;
-	}
+	public FluidStack getFluid() { return fluid; }
 
 	public int getCapacity()
 	{
 		return capacity;
-	}
-
-	public FluidStack drain(FluidStack drainFluid)
-	{
-		if (fluid.isEmpty() || !fluid.isSameFluid(drainFluid) || (drainFluid.getAmount() <= 0)) return FluidStack.empty();
-
-		FluidStack drainedFluid = fluid.copy();
-		drainedFluid.setAmount(Math.min(fluid.getAmount(), drainFluid.getAmount()));
-
-		fluid.changeAmount(-drainedFluid.getAmount());
-		fluidChanged(FluidChange.AMOUNT);
-
-		return drainedFluid;
-	}
-
-	public int fill(FluidStack fillFluid)
-	{
-		if (fillFluid.isEmpty()) return 0;
-
-		if (fluid.isEmpty())
-		{
-			setFluid(fillFluid);
-			fluidChanged(FluidChange.TYPE);
-
-			return fluid.getAmount();
-		}
-
-		if (!fluid.isSameFluid(fillFluid)) return 0;
-
-		int fillAmount = Math.min(capacity - fluid.getAmount(), fillFluid.getAmount());
-
-		if (fillAmount > 0)
-		{
-			fluid.changeAmount(fillAmount);
-			fluidChanged(FluidChange.AMOUNT);
-		}
-
-		return fillAmount;
 	}
 
 	/**
@@ -1182,33 +1118,16 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	 * The fluid that should be contained in the tank.<br>
 	 * Note that the amount will be limited to the tanks capacity.
 	 */
-	private void setFluid(FluidStack newFluid)
+	public void setFluid(FluidStack newFluid)
 	{
 		fluid = newFluid.copy();
 		// limit the stored fluid to the tanks capacity
 		if (!fluid.isEmpty()) fluid.setAmount(Math.min(fluid.getAmount(), capacity));
 	}
 
-	/**
-	 * Handles changes to the fluid in the tank.
-	 *
-	 * @param change
-	 * The change that occurred. <br>
-	 * <code>FluidChange.TYPE</code> means always from empty to a fluid,
-	 * not the other way around.
-	 */
-	private void fluidChanged(FluidChange change)
+	public void fluidChanged(FluidChange change)
 	{
 		distributeFluidToTanks();
 		setChanged();
-	}
-
-	private enum FluidChange
-	{
-		TYPE,		// Only going from empty to some fluid is considered a type change, but not going from a fluid to empty.
-		AMOUNT;
-
-		public boolean isType() { return this == TYPE; }
-		public boolean isAmount() { return this == AMOUNT; }
 	}
 }

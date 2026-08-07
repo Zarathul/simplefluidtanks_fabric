@@ -171,7 +171,7 @@ public class TankBlockEntity extends BlockEntity
 	 */
 	public boolean isEmpty()
 	{
-		return fillLevel == 0;
+		return fillLevel == 0 || getFluid() == Fluids.EMPTY;
 	}
 
 	/**

@@ -14,7 +14,7 @@
 	"item.simplefluidtanks.wrench.tooltip": "§e§oUmschalten §7gedrückt halten für Details.",
 	"item.simplefluidtanks.wrench.tooltip_details": "§7Wird benutzt um §bTanks §7und §bVentile\n§7augenblicklich abzubauen. Wird auch\n§7benutzt um der Multiblock Konstruktion\n§7neue §bTanks §7hinzuzufügen.",
 	"item.simplefluidtanks.portable_tank": "Tragbarer Tank",
-	"item.simplefluidtanks.portable_tank.tooltip": "§7Inhalt: %s\n§7Menge: %s/%s\n§7Füllmodus: %s\n§e§oUmschalten §7gedrückt halten für Details.",
+	"item.simplefluidtanks.portable_tank.tooltip": "§7Inhalt: %s%s(%s)\n§7Menge: %s/%s\n§7Füllmodus: %s\n§e§oUmschalten §7gedrückt halten für Details.",
 	"item.simplefluidtanks.portable_tank.tooltip_max": "§7Max",
 	"item.simplefluidtanks.portable_tank.tooltip_single_bucket": "§7Eimer",
 	"item.simplefluidtanks.portable_tank.tooltip_details": "§7Ein kleiner tragbarer Flüssigkeitstank.\n§bSchleichen §7beim Benutzen gedrückt halten um zu\n§7Befüllen, los lassen zum leeren.\n§9Nimmt bis zu §b%d §9Eimer Flüssigkeit auf.",

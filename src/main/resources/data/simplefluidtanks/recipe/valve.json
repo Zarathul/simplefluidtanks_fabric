@@ -1,0 +1,17 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"pattern": [
+		"ISI",
+		"STS",
+		"ISI"
+	],
+	"key": {
+		"I": "#c:ingots/iron",
+		"S": "#c:slime_balls",
+		"T": "simplefluidtanks:tank"
+	},
+	"result": {
+		"id": "simplefluidtanks:valve",
+		"count": 1
+	}
+}

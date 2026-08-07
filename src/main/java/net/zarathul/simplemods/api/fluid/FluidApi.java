@@ -4,6 +4,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.material.Fluid;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,5 +26,18 @@ public final class FluidApi
 	{
 		Logger log = LogManager.getLogger(SIMPLE_MODS_ID);
 		log.info("Initializing Fluid-Api.");
+	}
+
+	public static String getFluidName(Identifier fluidId)
+	{
+		if (fluidId == null) return "";
+
+		var registryResult = BuiltInRegistries.FLUID.get(fluidId);
+		if (registryResult.isEmpty()) return "";
+
+		Fluid fluid = registryResult.get().value();
+		String fluidName = fluid.defaultFluidState().createLegacyBlock().getBlock().getName().getString();
+
+		return fluidName;
 	}
 }
