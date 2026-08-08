@@ -2,8 +2,8 @@ package net.zarathul.simplefluidtanks;
 
 import net.minecraft.resources.Identifier;
 import net.zarathul.simplefluidtanks.common.Utils;
-import net.zarathul.simplefluidtanks.configuration.Config;
-import net.zarathul.simplefluidtanks.configuration.ConfigSetting;
+import net.zarathul.simplemods.api.configuration.Config;
+import net.zarathul.simplemods.api.configuration.ConfigSetting;
 
 public final class Settings
 {

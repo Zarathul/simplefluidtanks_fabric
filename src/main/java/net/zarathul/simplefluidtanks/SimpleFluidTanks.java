@@ -6,15 +6,9 @@ import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.commands.Commands;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BucketItem;
@@ -26,15 +20,11 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.zarathul.simplefluidtanks.blocks.WrenchableBlock;
 import net.zarathul.simplefluidtanks.common.Utils;
-import net.zarathul.simplefluidtanks.configuration.Config;
+import net.zarathul.simplemods.api.configuration.Config;
 import net.zarathul.simplemods.api.fluid.FluidApi;
 import net.zarathul.simplemods.api.fluid.FluidHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jspecify.annotations.NonNull;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class SimpleFluidTanks implements ModInitializer
 {
@@ -46,6 +36,7 @@ public class SimpleFluidTanks implements ModInitializer
 
 	// creative tab
 	public static final String CREATIVE_MODE_TAB_TITLE = "Simple Mods";
+	public static final String CONFIG_GUI_TITLE = "Simple Fluid Tanks";
 	public static final Identifier CREATIVE_MODE_TAB_ID = Identifier.fromNamespaceAndPath(SIMPLE_MODS_ID, "creative_tab");
 	public static CreativeModeTab creativeTab;
 
@@ -58,9 +49,9 @@ public class SimpleFluidTanks implements ModInitializer
 	@Override
 	public void onInitialize()
 	{
-		Config.reset();
-		Settings.init();
-		Config.loadOrCreateConfigFile(MOD_ID, false);
+		Config.initialize(MOD_ID, "Simple Fluid Tanks", false, Settings::init);
+		Config.registerServerSideNetworking();
+		CommandRegistrationCallback.EVENT.register(Config::registerCommand);
 
 		FluidApi.initialize();
 
@@ -71,35 +62,8 @@ public class SimpleFluidTanks implements ModInitializer
 		creativeTab = MakeCreativeTab();
 		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, CREATIVE_MODE_TAB_ID, creativeTab);
 
-		// Register config command
-		CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> {
-			dispatcher.register(
-				Commands.literal("sft")
-				.executes(context -> {
-					context.getSource().sendSuccess(() -> Component.translatable("commands.sft.info"), false);
-					return 1;
-				})
-				.then(
-					Commands.literal("config")
-					.executes(context -> {
-						var player =  context.getSource().getPlayer();
-						List<Config.ConfigValue> configValues = new ArrayList<>();
-						Config.writeServerSettings(false, configValues, player);
-						SimpleFluidTanks.ConfigCommandPayload outgoingPayload = new SimpleFluidTanks.ConfigCommandPayload(configValues, SimpleFluidTanks.onDedicatedServer);
-
-						ServerPlayNetworking.send(player, outgoingPayload);
-
-						return 1;
-					})
-				)
-			);
-		});
-
 		ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
-			onDedicatedServer = server.isDedicatedServer();
-			Config.reset();
-			Settings.init();
-			Config.loadOrCreateConfigFile(MOD_ID, onDedicatedServer);
+			Config.initialize(MOD_ID, CONFIG_GUI_TITLE, server.isDedicatedServer(), Settings::init);
 		});
 
 		// Necessary for dismantling blocks with the wrench on sneak right-click.
@@ -159,21 +123,5 @@ public class SimpleFluidTanks implements ModInitializer
 				output.accept(BlocksAndItems.itemPortableTank);
 			})
 			.build();
-	}
-
-	public record ConfigCommandPayload(List<Config.ConfigValue> values, boolean fromDedicatedServer) implements CustomPacketPayload
-	{
-		public static final Identifier ID = Utils.createModIdentifier("config_command");
-		public static final CustomPacketPayload.Type<ConfigCommandPayload> TYPE = new CustomPacketPayload.Type<>(ID);
-		public static final StreamCodec<FriendlyByteBuf, ConfigCommandPayload> STREAM_CODEC = StreamCodec.composite(
-			Config.LIST_STREAM_CODEC, ConfigCommandPayload::values,
-			ByteBufCodecs.BOOL, ConfigCommandPayload::fromDedicatedServer,
-			ConfigCommandPayload::new
-		);
-
-		public @NonNull Type<? extends CustomPacketPayload> type()
-		{
-			return TYPE;
-		}
 	}
 }
