@@ -9,3 +9,9 @@ pluginManagement {
 }
 
 rootProject.name = 'simplefluidtanks'
+
+includeBuild("libs/simplemodslib") {
+    dependencySubstitution {
+        substitute module("net.zarathul:simplemodslib") using project(":")
+    }
+}

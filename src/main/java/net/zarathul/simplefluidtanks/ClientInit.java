@@ -5,7 +5,7 @@ import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.zarathul.simplefluidtanks.rendering.ModelLoadingWatchdog;
-import net.zarathul.simplemods.api.configuration.Config;
+import net.zarathul.simplemodslib.api.configuration.Config;
 
 public class ClientInit implements ClientModInitializer
 {

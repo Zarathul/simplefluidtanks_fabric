@@ -20,7 +20,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.zarathul.simplefluidtanks.blocks.WrenchableBlock;
 import net.zarathul.simplefluidtanks.common.Utils;
-import net.zarathul.simplemods.api.configuration.Config;
+import net.zarathul.simplemodslib.api.configuration.Config;
 import net.zarathul.simplemods.api.fluid.FluidApi;
 import net.zarathul.simplemods.api.fluid.FluidHelper;
 import org.apache.logging.log4j.LogManager;
