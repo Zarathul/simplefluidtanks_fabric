@@ -3,14 +3,9 @@ package net.zarathul.simplefluidtanks.blocks;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -29,8 +24,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
@@ -133,22 +126,7 @@ public class ValveBlock extends WrenchableBlock
 
 			if (valveEntity != null)
 			{
-				FluidHelper.FluidHandlerInteractionResult result = FluidHelper.InteractWithFluidHandler(player, hand, valveEntity);
-				if (result.success())
-				{
-					Fluid fluid = valveEntity.getFluid().getFluid();
-					SoundEvent soundevent = (fluid == Fluids.LAVA) ?
-											(result.interaction() == FluidHelper.FluidHandlerInteraction.drain) ?
-											SoundEvents.BUCKET_EMPTY_LAVA : SoundEvents.BUCKET_FILL_LAVA :
-											(result.interaction() == FluidHelper.FluidHandlerInteraction.drain) ?
-											SoundEvents.BUCKET_EMPTY : SoundEvents.BUCKET_FILL;
-
-					((ServerPlayer)player).connection.send(new ClientboundSoundPacket(
-						Holder.direct(soundevent),
-						SoundSource.BLOCKS,
-						player.getX(), player.getY(), player.getZ(),
-						1.0f, 1.0f, level.getRandom().nextLong()));
-				}
+				FluidHelper.FluidHandlerInteractionResult result = FluidHelper.InteractWithFluidHandler((ServerPlayer)player, hand, valveEntity);
 			}
 			else
 			{
