@@ -74,7 +74,7 @@ public interface IFluidHandler
 			setFluid(fillFluid);
 			fluidChanged(FluidChange.TYPE);
 
-			return fluid.getAmount();
+			return getFluid().getAmount();
 		}
 
 		if (!fluid.isSameFluid(fillFluid)) return 0;
