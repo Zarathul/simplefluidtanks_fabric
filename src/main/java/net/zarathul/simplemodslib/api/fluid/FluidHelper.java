@@ -1,8 +1,13 @@
 package net.zarathul.simplemodslib.api.fluid;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BucketItem;
@@ -19,48 +24,71 @@ import java.util.HashMap;
 public final class FluidHelper
 {
 	private static final HashMap<Fluid, Item> FLUID_TO_BUCKET = new HashMap<>();
+	private static final RandomSource random = RandomSource.create();
 
 	public enum FluidHandlerInteraction
 	{
-		none,
-		fill,
-		drain
+		NONE,
+		FILL,
+		DRAIN
 	}
 
-	public record FluidHandlerInteractionResult(boolean success, FluidHandlerInteraction interaction) {  }
+	public record FluidHandlerInteractionResult(boolean success, FluidHandlerInteraction interaction, FluidStack fluid)
+	{
+		public static FluidHandlerInteractionResult failure() { return new FluidHandlerInteractionResult(false, FluidHandlerInteraction.NONE, FluidStack.empty()); }
+		public static FluidHandlerInteractionResult success(FluidHandlerInteraction interaction, FluidStack fluid) { return new FluidHandlerInteractionResult(true, interaction, fluid); }
+	}
 
-	public static FluidHandlerInteractionResult InteractWithFluidHandler(Player player, InteractionHand hand, IFluidHandler handler)
+	public static FluidHandlerInteractionResult InteractWithFluidHandler(ServerPlayer player, InteractionHand hand, IFluidHandler handler)
 	{
 		ItemStack items = player.getItemInHand(hand);
 		Item heldItem = items.getItem();
+		FluidHandlerInteractionResult result;
 
 		if (heldItem == Items.BUCKET)	// empty bucket
 		{
-			return new FluidHandlerInteractionResult(fillEmptyBucket(player, hand, handler), FluidHandlerInteraction.fill);
+			result = fillEmptyBucket(player, hand, handler);
 		}
 		else if (isBucket(heldItem))
 		{
-			return new FluidHandlerInteractionResult(drainBucket(player, hand, handler), FluidHandlerInteraction.drain);
+			result = drainBucket(player, hand, handler);
 		}
 		else if (isFluidContainerItem(heldItem))
 		{
 			if (player.isCrouching())
 			{
-				return new FluidHandlerInteractionResult(fillFluidContainerItem(items, handler), FluidHandlerInteraction.fill);
+				result = fillFluidContainerItem(items, handler);
 			}
 			else
 			{
-				return new FluidHandlerInteractionResult(drainFluidContainerItem(items, handler), FluidHandlerInteraction.drain);
+				result = drainFluidContainerItem(items, handler);
+			}
+		}
+		else
+		{
+			result = FluidHandlerInteractionResult.failure();
+		}
+
+		if (result.success())
+		{
+			var soundEvent = result.fluid().getFluid().getPickupSound();
+			if (soundEvent.isPresent())
+			{
+				((ServerPlayer)player).connection.send(new ClientboundSoundPacket(
+					Holder.direct(soundEvent.get()),
+					SoundSource.BLOCKS,
+					player.getX(), player.getY(), player.getZ(),
+					1.0f, 1.0f, random.nextLong()));
 			}
 		}
 
-		return new FluidHandlerInteractionResult(false, FluidHandlerInteraction.none);
+		return result;
 	}
 
 	public static boolean isFluidHandler(Level world, BlockPos pos)
 	{
-		BlockEntity tile = world.getChunkAt(pos).getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK);
-		return (tile instanceof IFluidHandler);
+		BlockEntity blockEntity = world.getChunkAt(pos).getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK);
+		return (blockEntity instanceof IFluidHandler);
 	}
 
 	public static boolean isFluidContainerItem(ItemStack item)
@@ -86,7 +114,7 @@ public final class FluidHelper
 		return fluidName;
 	}
 
-	private static boolean fillEmptyBucket(Player player, InteractionHand hand, IFluidHandler handler)
+	private static FluidHandlerInteractionResult fillEmptyBucket(Player player, InteractionHand hand, IFluidHandler handler)
 	{
 		FluidStack handlerFluid = handler.getFluid();
 
@@ -98,14 +126,15 @@ public final class FluidHelper
 			{
 				Item bucket = getBucketForFluid(handlerFluid.getFluid());
 				player.setItemInHand(hand, new ItemStack(bucket));
-				return true;
+
+				return FluidHandlerInteractionResult.success(FluidHandlerInteraction.FILL, new FluidStack(handlerFluid.getFluid(), FluidStack.BUCKET_VOLUME));
 			}
 		}
 
-		return false;
+		return FluidHandlerInteractionResult.failure();
 	}
 
-	private static boolean drainBucket(Player player, InteractionHand hand, IFluidHandler handler)
+	private static FluidHandlerInteractionResult drainBucket(Player player, InteractionHand hand, IFluidHandler handler)
 	{
 		BucketItem heldBucket = (BucketItem)player.getItemInHand(hand).getItem();
 		Fluid bucketFluid = heldBucket.getContent();
@@ -115,28 +144,39 @@ public final class FluidHelper
 		// fluid is determined by the bucket. If successful, replace the bucket in the players hand with an empty one.
 		if ((handler.getCapacity() - handlerFluid.getAmount()) >= FluidStack.BUCKET_VOLUME)
 		{
-			if (handler.fill(new FluidStack(bucketFluid, FluidStack.BUCKET_VOLUME)) > 0)
+			FluidStack fillFluid = new FluidStack(bucketFluid, FluidStack.BUCKET_VOLUME);
+
+			if (handler.fill(fillFluid) > 0)
 			{
 				if (!player.isCreative()) player.setItemInHand(hand, new ItemStack(Items.BUCKET));
-				return true;
+
+				return FluidHandlerInteractionResult.success(FluidHandlerInteraction.DRAIN, fillFluid);
 			}
 		}
 
-		return false;
+		return FluidHandlerInteractionResult.failure();
 	}
 
-	private static boolean fillFluidContainerItem(ItemStack stack, IFluidHandler handler)
+	private static FluidHandlerInteractionResult fillFluidContainerItem(ItemStack stack, IFluidHandler handler)
 	{
 		FluidStack handlerFluid = handler.getFluid();
 		IFluidContainerItem heldItem = (IFluidContainerItem)stack.getItem();
 
 		int itemFillAmount = heldItem.fill(stack, handler.getFluid().copy());
-		if (itemFillAmount > 0) handler.drain(new FluidStack(handlerFluid.getFluid(), itemFillAmount));
+		if (itemFillAmount > 0)
+		{
+			FluidStack fillFluid = new FluidStack(handlerFluid.getFluid(), itemFillAmount);
+			handler.drain(fillFluid);
 
-		return (itemFillAmount > 0);
+			return FluidHandlerInteractionResult.success(FluidHandlerInteraction.FILL, fillFluid);
+		}
+		else
+		{
+			return FluidHandlerInteractionResult.failure();
+		}
 	}
 
-	private static boolean drainFluidContainerItem(ItemStack stack, IFluidHandler handler)
+	private static FluidHandlerInteractionResult drainFluidContainerItem(ItemStack stack, IFluidHandler handler)
 	{
 		FluidStack handlerFluid = handler.getFluid();
 		IFluidContainerItem heldItem = (IFluidContainerItem)stack.getItem();
@@ -147,9 +187,12 @@ public final class FluidHelper
 		drainableFluid.setAmount(remainingHandlerCapacity);
 
 		FluidStack drainedFluid = heldItem.drain(stack, drainableFluid);
-		if (!drainedFluid.isEmpty()) return (handler.fill(drainedFluid) > 0);
+		if (!drainedFluid.isEmpty() && (handler.fill(drainedFluid) > 0))
+		{
+			 return FluidHandlerInteractionResult.success(FluidHandlerInteraction.DRAIN, drainableFluid);
+		}
 
-		return false;
+		return FluidHandlerInteractionResult.failure();
 	}
 
 	private static Item getBucketForFluid(Fluid fluid)

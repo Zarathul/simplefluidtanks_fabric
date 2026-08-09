@@ -1,5 +1,10 @@
 package net.zarathul.simplemodslib.api.fluid;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -8,6 +13,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
 import net.zarathul.simplemodslib.SimpleModsLib;
 
 public abstract class FluidContainerItemBase extends Item implements IFluidContainerItem
@@ -34,6 +43,7 @@ public abstract class FluidContainerItemBase extends Item implements IFluidConta
 		}
 		else return super.getBarWidth(stack);
 	}
+
 	@Override
 	public int getBarColor(ItemStack stack)
 	{
@@ -70,6 +80,76 @@ public abstract class FluidContainerItemBase extends Item implements IFluidConta
 	@Override
 	public InteractionResult useOn(UseOnContext context)
 	{
-		return InteractionResult.PASS;
+		Level level = context.getLevel();
+
+		if (!level.isClientSide())
+		{
+			BlockPos clickedPos = context.getClickedPos();
+			// Fluids are click-through, so look at the block in direction of the clicked face.
+			BlockPos targetPos = clickedPos.offset(context.getClickedFace().getUnitVec3i());
+			FluidState fluidStateAtClickedPos = level.getFluidState(targetPos);
+			ItemStack heldItemStack = context.getItemInHand();
+
+			// Try to pick up source block.
+			if (!fluidStateAtClickedPos.isEmpty() && fluidStateAtClickedPos.isSource())
+			{
+				FluidStack sourceFluid = new FluidStack(fluidStateAtClickedPos.getType(), FluidStack.BUCKET_VOLUME);
+				int filledAmount = fill(heldItemStack, sourceFluid);
+
+				if (filledAmount == FluidStack.BUCKET_VOLUME)
+				{
+					if (level.setBlock(targetPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL))
+					{
+						var soundEvent = sourceFluid.getFluid().getPickupSound();
+						if (soundEvent.isPresent())
+						{
+							ServerPlayer player = (ServerPlayer)context.getPlayer();
+
+							player.connection.send(new ClientboundSoundPacket(
+								Holder.direct(soundEvent.get()),
+								SoundSource.BLOCKS,
+								player.getX(), player.getY(), player.getZ(),
+								1.0f, 1.0f, level.getRandom().nextLong()));
+						}
+
+						return InteractionResult.SUCCESS_SERVER;
+					}
+				}
+			}
+			else
+			{
+				// Try to place a source block, either if the target position is empty or contains a fluid that is not a source block.
+				FluidStack fluidStackInItem = FluidStack.getFluid(heldItemStack);
+				BlockState blockAtTargetPos = level.getBlockState(targetPos);
+
+				if ((blockAtTargetPos.isAir() || !level.getBlockState(targetPos).getFluidState().isSource()) && fluidStackInItem.getAmount() >= FluidStack.BUCKET_VOLUME)
+				{
+					FluidStack drainFluidStack = fluidStackInItem.copy();
+					drainFluidStack.setAmount(FluidStack.BUCKET_VOLUME);
+					drain(heldItemStack, drainFluidStack);
+
+					BlockState fluidBlock = drainFluidStack.getFluid().defaultFluidState().createLegacyBlock();
+
+					if (level.setBlock(targetPos, fluidBlock, Block.UPDATE_ALL))
+					{
+						var soundEvent = drainFluidStack.getFluid().getPickupSound();
+						if (soundEvent.isPresent())
+						{
+							ServerPlayer player = (ServerPlayer)context.getPlayer();
+
+							player.connection.send(new ClientboundSoundPacket(
+								Holder.direct(soundEvent.get()),
+								SoundSource.BLOCKS,
+								player.getX(), player.getY(), player.getZ(),
+								1.0f, 1.0f, level.getRandom().nextLong()));
+						}
+					}
+
+					return InteractionResult.SUCCESS_SERVER;
+				}
+			}
+		}
+
+		return super.useOn(context);
 	}
 }
