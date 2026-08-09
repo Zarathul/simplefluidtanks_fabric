@@ -26,8 +26,8 @@ import net.zarathul.simplefluidtanks.common.BasicAStar;
 import net.zarathul.simplefluidtanks.common.BlockSearchMode;
 import net.zarathul.simplefluidtanks.common.Directions;
 import net.zarathul.simplefluidtanks.common.Utils;
-import net.zarathul.simplemods.api.fluid.FluidStack;
-import net.zarathul.simplemods.api.fluid.IFluidHandler;
+import net.zarathul.simplemodslib.api.fluid.FluidStack;
+import net.zarathul.simplemodslib.api.fluid.IFluidHandler;
 import org.jspecify.annotations.Nullable;
 
 import java.util.*;

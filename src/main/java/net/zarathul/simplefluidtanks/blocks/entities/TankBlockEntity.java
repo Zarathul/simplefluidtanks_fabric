@@ -21,7 +21,7 @@ import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
 import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplefluidtanks.rendering.ConnectedTexturesHelper;
-import net.zarathul.simplemods.api.fluid.FluidStack;
+import net.zarathul.simplemodslib.api.fluid.FluidStack;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;

@@ -12,9 +12,10 @@ import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.common.Utils;
-import net.zarathul.simplemods.api.fluid.FluidApi;
-import net.zarathul.simplemods.api.fluid.FluidContainerComponent;
-import net.zarathul.simplemods.api.fluid.FluidContainerItemBase;
+import net.zarathul.simplemodslib.SimpleModsLib;
+import net.zarathul.simplemodslib.api.fluid.FluidContainerComponent;
+import net.zarathul.simplemodslib.api.fluid.FluidContainerItemBase;
+import net.zarathul.simplemodslib.api.fluid.FluidHelper;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -47,10 +48,10 @@ public class PortableTankItem extends FluidContainerItemBase
 		}
 		else
 		{
-			FluidContainerComponent component = stack.get(FluidApi.FLUID_CONTAINER_COMPONENT);
+			FluidContainerComponent component = stack.get(SimpleModsLib.FLUID_CONTAINER_COMPONENT);
 			if (component == null) return;
 
-			String fluidName = FluidApi.getFluidName(component.fluidId());
+			String fluidName = FluidHelper.getFluidName(component.fluidId());
 
 			tooltip.addAll(Utils.multiLineTranslate(
 				TOOLTIP_KEY,

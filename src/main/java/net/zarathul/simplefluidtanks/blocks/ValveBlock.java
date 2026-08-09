@@ -36,7 +36,7 @@ import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.ValveBlockEntity;
 import net.zarathul.simplefluidtanks.common.Utils;
-import net.zarathul.simplemods.api.fluid.FluidHelper;
+import net.zarathul.simplemodslib.api.fluid.FluidHelper;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.BiConsumer;

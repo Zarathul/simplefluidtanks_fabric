@@ -21,8 +21,7 @@ import net.minecraft.world.phys.HitResult;
 import net.zarathul.simplefluidtanks.blocks.WrenchableBlock;
 import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplemodslib.api.configuration.Config;
-import net.zarathul.simplemods.api.fluid.FluidApi;
-import net.zarathul.simplemods.api.fluid.FluidHelper;
+import net.zarathul.simplemodslib.api.fluid.FluidHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,8 +51,6 @@ public class SimpleFluidTanks implements ModInitializer
 		Config.initialize(MOD_ID, "Simple Fluid Tanks", false, Settings::init);
 		Config.registerServerSideNetworking();
 		CommandRegistrationCallback.EVENT.register(Config::registerCommand);
-
-		FluidApi.initialize();
 
 		// Register Blocks & Items.
 		BlocksAndItems.initialize();

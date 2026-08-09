@@ -16,7 +16,7 @@ import net.zarathul.simplefluidtanks.items.PortableTankItem;
 import net.zarathul.simplefluidtanks.items.TankItem;
 import net.zarathul.simplefluidtanks.items.ValveItem;
 import net.zarathul.simplefluidtanks.items.WrenchItem;
-import net.zarathul.simplemods.api.fluid.FluidStack;
+import net.zarathul.simplemodslib.api.fluid.FluidStack;
 
 import java.util.Set;
 
