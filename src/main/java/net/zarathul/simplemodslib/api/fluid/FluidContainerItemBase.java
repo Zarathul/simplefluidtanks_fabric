@@ -2,7 +2,9 @@ package net.zarathul.simplemodslib.api.fluid;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -11,6 +13,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomModelData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -19,11 +22,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.zarathul.simplemodslib.SimpleModsLib;
 
+import java.util.Collections;
+import java.util.List;
+
 public abstract class FluidContainerItemBase extends Item implements IFluidContainerItem
 {
 	protected FluidContainerItemBase(Properties properties, int defaultCapacity)
 	{
-		super(properties.component(SimpleModsLib.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(0, 16000, FluidStack.empty().getRegistryKey(), false)));
+		super(properties
+			.component(SimpleModsLib.FLUID_CONTAINER_COMPONENT, new FluidContainerComponent(0, 16000, FluidStack.empty().getRegistryKey(), false))
+			.component(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(List.of(1.0f), Collections.emptyList(), Collections.emptyList(), List.of(0)))
+		);
 	}
 
 	@Override
@@ -82,7 +91,7 @@ public abstract class FluidContainerItemBase extends Item implements IFluidConta
 	{
 		Level level = context.getLevel();
 
-		if (!level.isClientSide())
+		if (!level.isClientSide()) // Try to pick up source block.
 		{
 			BlockPos clickedPos = context.getClickedPos();
 			// Fluids are click-through, so look at the block in direction of the clicked face.
@@ -90,7 +99,6 @@ public abstract class FluidContainerItemBase extends Item implements IFluidConta
 			FluidState fluidStateAtClickedPos = level.getFluidState(targetPos);
 			ItemStack heldItemStack = context.getItemInHand();
 
-			// Try to pick up source block.
 			if (!fluidStateAtClickedPos.isEmpty() && fluidStateAtClickedPos.isSource())
 			{
 				FluidStack sourceFluid = new FluidStack(fluidStateAtClickedPos.getType(), FluidStack.BUCKET_VOLUME);
@@ -116,9 +124,8 @@ public abstract class FluidContainerItemBase extends Item implements IFluidConta
 					}
 				}
 			}
-			else
+			else // Try to place a source block, either if the target position is empty or contains a fluid that is not a source block.
 			{
-				// Try to place a source block, either if the target position is empty or contains a fluid that is not a source block.
 				FluidStack fluidStackInItem = FluidStack.getFluid(heldItemStack);
 				BlockState blockAtTargetPos = level.getBlockState(targetPos);
 
@@ -151,5 +158,13 @@ public abstract class FluidContainerItemBase extends Item implements IFluidConta
 		}
 
 		return super.useOn(context);
+	}
+
+	@Override
+	public void onFluidChanged(ItemStack itemStack, int amount, int capacity, Identifier fluidId)
+	{
+		// Update custom model data.
+		float fillLevel = Math.clamp(amount / (float)capacity, 0f, 1f);
+		itemStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(List.of(fillLevel), Collections.emptyList(), Collections.emptyList(), Collections.emptyList()));
 	}
 }
