@@ -1,5 +1,12 @@
 package net.zarathul.simplemodslib.api.fluid;
 
+import com.mojang.blaze3d.platform.NativeImage;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.client.renderer.block.FluidModel;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -7,6 +14,7 @@ import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -16,8 +24,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.Fluids;
+import net.zarathul.simplemodslib.mixin.OverworldBiomesAccessor;
+import net.zarathul.simplemodslib.mixin.SpriteContentsAccessor;
 
 import java.util.HashMap;
 
@@ -112,6 +124,129 @@ public final class FluidHelper
 		String fluidName = fluid.defaultFluidState().createLegacyBlock().getBlock().getName().getString();
 
 		return fluidName;
+	}
+
+	@Environment(EnvType.CLIENT)
+	public static int getFluidColor(Fluid fluid, BlockAndTintGetter level, BlockPos pos)
+	{
+		return getFluidColor(fluid, level, pos, false);
+	}
+
+	@Environment(EnvType.CLIENT)
+	public static int getFluidColor(Fluid fluid, BlockAndTintGetter level, BlockPos pos, boolean useDominantTextureColorFallback)
+	{
+		if (fluid.isSame(Fluids.EMPTY)) return -1;
+
+		FluidModel fluidModel = Minecraft.getInstance().getModelManager().getFluidStateModelSet().get(fluid.defaultFluidState());
+
+		if (fluidModel.tintSource() == null)
+		{
+			if (!useDominantTextureColorFallback) return -1;
+
+			TextureAtlasSprite sprite = fluidModel.stillMaterial().sprite();
+			return calculateDominantColor(sprite);
+		}
+
+		BlockState defaultBlockState = fluid.defaultFluidState().createLegacyBlock().getBlock().defaultBlockState();
+
+		// Water has a grayscale texture and needs tinting, but without level and pos, the tint source of water returns -1.
+		if (level != null && pos != null) return ARGB.opaque(fluidModel.tintSource().colorInWorld(defaultBlockState, level, pos));
+		else if (fluid.isSame(Fluids.WATER)) return ARGB.opaque(OverworldBiomesAccessor.getNormalWaterColor());
+
+		return ARGB.opaque(fluidModel.tintSource().color(defaultBlockState));
+	}
+
+	private static final HashMap<Identifier, Integer> dominantColorLookupCache = new HashMap<>();
+
+	/**
+	 * Tries to determine the dominant color in a {@link TextureAtlasSprite}.<br>
+	 * Note: Results are cached by the sprites atlas location.<br>
+	 * To determine the dominant color, each channel is reduced to 4 bits, grouped into buckets and the occurrences counted.
+	 * Pixels with very low or high alpha are dismissed in this process. At the end, the bucket with the highest count is
+	 * selected and the tint color is constructed from the contained accumulated channel values, weighed by the accumulated
+	 * alpha for that bucket.
+	 *
+	 * @param sprite
+	 * The {@link TextureAtlasSprite} to calculate the dominant color for.
+	 * @return
+	 * An ARGB value representing the dominant color in the sprite.
+	 */
+	@Environment(EnvType.CLIENT)
+	public static int calculateDominantColor(TextureAtlasSprite sprite)
+	{
+		if (dominantColorLookupCache.containsKey(sprite.atlasLocation())) return dominantColorLookupCache.get(sprite.atlasLocation());
+
+		SpriteContentsAccessor spriteContents = (SpriteContentsAccessor)sprite.contents();
+		NativeImage image = spriteContents.simplemodslib$getOriginalImage();
+
+		final int LEVELS = 16;
+		final int BUCKET_COUNT = LEVELS * LEVELS * LEVELS;
+
+		int[] counts = new int[BUCKET_COUNT];
+
+		long[] redBuckets   = new long[BUCKET_COUNT];
+		long[] greenBuckets = new long[BUCKET_COUNT];
+		long[] blueBuckets  = new long[BUCKET_COUNT];
+		long[] alphaBuckets = new long[BUCKET_COUNT];
+
+		for (int y = 0; y < image.getHeight(); y++)
+		{
+			for (int x = 0; x < image.getWidth(); x++)
+			{
+				int argb = image.getPixel(x, y);
+
+				int alpha = (argb >>> 24);
+				int red   = (argb >>> 16) & 0xFF;
+				int green = (argb >>> 8)  & 0xFF;
+				int blue  = argb & 0xFF;
+
+				if (alpha < 32) {
+					continue;
+				}
+
+				// Ignore nearly-white highlights.
+				if (Math.min(red, Math.min(green, blue)) > 245) continue;
+
+				// 256 -> 16 levels per channel.
+				int qr = red   >> 4;
+				int qg = green >> 4;
+				int qb = blue  >> 4;
+
+				int bucket = (qr * LEVELS + qg) * LEVELS + qb;
+
+				counts[bucket]++;
+
+				redBuckets[bucket]   += (long) red   * alpha;
+				greenBuckets[bucket] += (long) green * alpha;
+				blueBuckets[bucket]  += (long) blue  * alpha;
+				alphaBuckets[bucket] += alpha;
+			}
+		}
+
+		int dominantBucket = -1;
+		int dominantCount = 0;
+
+		for (int i = 0; i < BUCKET_COUNT; i++)
+		{
+			if (counts[i] > dominantCount)
+			{
+				dominantCount = counts[i];
+				dominantBucket = i;
+			}
+		}
+
+		if (dominantBucket < 0 || alphaBuckets[dominantBucket] == 0) return 0xFFFFFF;
+
+		long weight = alphaBuckets[dominantBucket];
+
+		int red   = (int) (redBuckets[dominantBucket]   / weight);
+		int green = (int) (greenBuckets[dominantBucket] / weight);
+		int blue  = (int) (blueBuckets[dominantBucket]  / weight);
+
+		int dominantColor = (0xFF << 24) | (red << 16) | (green << 8) | blue;
+		dominantColorLookupCache.put(sprite.atlasLocation(), dominantColor);
+
+		return dominantColor;
 	}
 
 	private static FluidHandlerInteractionResult fillEmptyBucket(Player player, InteractionHand hand, IFluidHandler handler)
