@@ -33,8 +33,6 @@ import org.jspecify.annotations.Nullable;
 import java.util.*;
 import java.util.Map.Entry;
 
-// TODO: Check what is still actually needed here, like facing.
-
 /**
  * Holds {@link BlockEntity} data for {@link ValveBlock}s,
  */

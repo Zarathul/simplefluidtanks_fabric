@@ -5,8 +5,6 @@ import net.fabricmc.fabric.api.client.model.loading.v1.wrapper.WrapperBlockState
 import net.fabricmc.fabric.api.client.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.client.renderer.v1.mesh.ShadeMode;
 import net.fabricmc.fabric.api.client.renderer.v1.model.ModelHelper;
-import net.fabricmc.fabric.api.transfer.v1.client.fluid.FluidVariantRendering;
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Sheets;
@@ -22,9 +20,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.zarathul.simplefluidtanks.BlocksAndItems;
-import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.TankBlockEntity;
 import net.zarathul.simplefluidtanks.common.Utils;
+import net.zarathul.simplemodslib.api.fluid.FluidHelper;
 import org.jspecify.annotations.Nullable;
 
 import java.util.function.Predicate;
@@ -113,10 +111,10 @@ public class TankBlockStateModel extends WrapperBlockStateModel
 			Minecraft mc = Minecraft.getInstance();
 			Fluid tankFluid = tankBlockEntity.getFluid();
 			TextureAtlasSprite fluidSprite = mc.getModelManager().getFluidStateModelSet().get(tankFluid.defaultFluidState()).stillMaterial().sprite();
-			int fluidColor = FluidVariantRendering.getColor(FluidVariant.of(tankFluid));
+			int fluidColor = FluidHelper.getFluidColor(tankFluid, level, pos);
 
 			int fillLevel = tankBlockEntity.getFillLevel();
-			float fillLevelFactor = Math.min((float)fillLevel / SimpleFluidTanks.MAX_FILL_LEVEL, 1f);
+			float fillLevelFactor = Math.min((float)fillLevel / TankBlockEntity.FILL_LEVELS, 1f);
 
 			var tankBlockEntityAbove = level.getBlockEntity(pos.above(), BlocksAndItems.blockEntityTypeTank);
 			boolean cullFluidTop = (tankBlockEntityAbove.isPresent() && (tankBlockEntity.isPartOfSameTank(tankBlockEntityAbove.get())) && (tankBlockEntityAbove.get().getFillLevel() > 0));

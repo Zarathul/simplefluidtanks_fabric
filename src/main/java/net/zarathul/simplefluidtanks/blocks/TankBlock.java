@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.material.PushReaction;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.TankBlockEntity;
@@ -37,9 +38,10 @@ public class TankBlock extends WrenchableBlock
 	{
 		super(Block.Properties.of()
 			.setId(id)
-			.strength(Settings.tankBlockHardness(), Settings.tankBlockResistance())
+			.strength(Settings.tankBlockDestructionTime(), Settings.tankBlockResistance())
 			.sound(SoundType.GLASS)
-			.noOcclusion());
+			.noOcclusion()
+			.pushReaction(PushReaction.BLOCK));
 	}
 
 	@Override

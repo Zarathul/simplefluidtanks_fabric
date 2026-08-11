@@ -1,6 +1,75 @@
+
 {
 	"model": {
-		"type": "minecraft:model",
-		"model": "simplefluidtanks:item/portable_tank"
+		"type": "minecraft:range_dispatch",
+		"entries": [
+			{
+				"model": {
+					"type": "minecraft:model",
+					"model": "simplefluidtanks:item/portable_tank_20",
+					"tints": [
+						{
+							"type": "simplemodslib:container_item_fluid"
+						}
+					]
+				},
+				"threshold": 0.2
+			},
+			{
+				"model": {
+					"type": "minecraft:model",
+					"model": "simplefluidtanks:item/portable_tank_40",
+					"tints": [
+						{
+							"type": "simplemodslib:container_item_fluid"
+						}
+					]
+				},
+				"threshold": 0.4
+			},
+			{
+				"model": {
+					"type": "minecraft:model",
+					"model": "simplefluidtanks:item/portable_tank_60",
+					"tints": [
+						{
+							"type": "simplemodslib:container_item_fluid"
+						}
+					]
+				},
+				"threshold": 0.6
+			},
+			{
+				"model": {
+					"type": "minecraft:model",
+					"model": "simplefluidtanks:item/portable_tank_80",
+					"tints": [
+						{
+							"type": "simplemodslib:container_item_fluid"
+						}
+					]
+				},
+				"threshold": 0.8
+			},
+			{
+				"model": {
+					"type": "minecraft:model",
+					"model": "simplefluidtanks:item/portable_tank_100",
+					"tints": [
+						{
+							"type": "simplemodslib:container_item_fluid"
+						}
+					]
+				},
+				"threshold": 1.0
+			}
+		],
+		"property": "minecraft:custom_model_data",
+		"scale": 1.0,
+		"index": 0,
+		"fallback": {
+			"type": "minecraft:model",
+			"model": "simplefluidtanks:item/portable_tank"
+		}
 	}
 }

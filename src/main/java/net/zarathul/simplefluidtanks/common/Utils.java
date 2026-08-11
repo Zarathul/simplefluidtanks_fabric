@@ -185,11 +185,11 @@ public final class Utils
 	 * @param fillPercentage
 	 * The fill percentage.
 	 * @return
-	 * A value between 0 and {@link SimpleFluidTanks#MAX_FILL_LEVEL} (inclusive).
+	 * A value between 0 and {@link TankBlockEntity#FILL_LEVELS} (inclusive).
 	 */
 	public static int getFluidLevel(int fillPercentage)
 	{
-		int level = (int)Math.round((fillPercentage / 100.0d) * SimpleFluidTanks.MAX_FILL_LEVEL);
+		int level = (int)Math.round((fillPercentage / 100.0d) * TankBlockEntity.FILL_LEVELS);
 		
 		// Make sure that even for small amounts the fluid is rendered at the first level.
 		return (fillPercentage > 0) ? Math.max(1, level) : 0;
@@ -338,7 +338,7 @@ public final class Utils
 	 */
 	public static BlockHitResult getPlayerPOVHitResult(Level world, Player player)
 	{
-		float pitch = player.xRotO; // TODO: might be getXRot() and getYRot()
+		float pitch = player.xRotO;
 		float yaw = player.yRotO;
 		Vec3 eyePos = player.getEyePosition(1.0F);
 		float h = Mth.cos(-yaw * 0.017453292F - 3.1415927F);

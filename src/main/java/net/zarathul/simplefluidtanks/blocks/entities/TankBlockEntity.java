@@ -16,7 +16,6 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.zarathul.simplefluidtanks.BlocksAndItems;
-import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
 import net.zarathul.simplefluidtanks.common.Utils;
@@ -31,6 +30,11 @@ import java.util.Arrays;
  */
 public class TankBlockEntity extends BlockEntity
 {
+	/**
+	 *  Defines how many visual steps there are in the fluid model.
+	 */
+	public static final int FILL_LEVELS = 16;
+
 	/**
 	 * The fill level of the tank.
 	 */
@@ -229,14 +233,14 @@ public class TankBlockEntity extends BlockEntity
 	 * Sets the {@link TankBlock}s current fill level.
 	 * 
 	 * @param value
-	 * A value between {@code 0} abd {@link SimpleFluidTanks#MAX_FILL_LEVEL} (default: >=0<16).
+	 * A value between {@code 0} and {@link TankBlockEntity#FILL_LEVELS}.
 	 * @param forceBlockUpdate
 	 * Specifies if a block update should be forced.
 	 * @return <code>true</code> if the fill level has changed, otherwise <code>false</code>.
 	 */
 	public boolean setFillLevel(int value, boolean forceBlockUpdate)
 	{
-		value = Mth.clamp(value, 0, SimpleFluidTanks.MAX_FILL_LEVEL);
+		value = Mth.clamp(value, 0, FILL_LEVELS);
 
 		boolean fillLevelChanged = (value != fillLevel);
 		fillLevel = value;

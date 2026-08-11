@@ -2,17 +2,11 @@ package net.zarathul.simplefluidtanks;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -29,21 +23,14 @@ public class SimpleFluidTanks implements ModInitializer
 {
 	// constants
 	public static final String MOD_ID = "simplefluidtanks";
-	public static final String SIMPLE_MODS_ID = "simplemods";
-	// This MUST be 16 to get the correct UV coordinates during rendering, because 16 is hardcoded into the interpolation method.
-	public static final int MAX_FILL_LEVEL = 16;
 
 	// creative tab
-	public static final String CREATIVE_MODE_TAB_TITLE = "Simple Mods";
 	public static final String CONFIG_GUI_TITLE = "Simple Fluid Tanks";
-	public static final Identifier CREATIVE_MODE_TAB_ID = Identifier.fromNamespaceAndPath(SIMPLE_MODS_ID, "creative_tab");
-	public static CreativeModeTab creativeTab;
 
 	// logger
 	public static final Logger log = LogManager.getLogger(MOD_ID);
 
 	public static boolean onDedicatedServer;
-
 
 	@Override
 	public void onInitialize()
@@ -54,10 +41,6 @@ public class SimpleFluidTanks implements ModInitializer
 
 		// Register Blocks & Items.
 		BlocksAndItems.initialize();
-
-		// Register creative tab.
-		creativeTab = MakeCreativeTab();
-		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, CREATIVE_MODE_TAB_ID, creativeTab);
 
 		ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
 			Config.initialize(MOD_ID, CONFIG_GUI_TITLE, server.isDedicatedServer(), Settings::init);
@@ -102,23 +85,5 @@ public class SimpleFluidTanks implements ModInitializer
 
 			return InteractionResult.PASS;
 		});
-	}
-
-	public static CreativeModeTab MakeCreativeTab()
-	{
-		var simpleModsTab = BuiltInRegistries.CREATIVE_MODE_TAB.get(CREATIVE_MODE_TAB_ID);
-
-		if (simpleModsTab.isPresent()) return simpleModsTab.get().value();
-
-		return FabricCreativeModeTab.builder()
-			.title(Component.literal(CREATIVE_MODE_TAB_TITLE))
-			.icon(() -> new ItemStack(BlocksAndItems.blockValve))
-			.displayItems((parameters, output) -> {
-				output.accept(BlocksAndItems.itemTank);
-				output.accept(BlocksAndItems.itemValve);
-				output.accept(BlocksAndItems.itemWrench);
-				output.accept(BlocksAndItems.itemPortableTank);
-			})
-			.build();
 	}
 }

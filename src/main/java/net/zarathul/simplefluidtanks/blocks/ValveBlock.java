@@ -24,6 +24,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.BlockHitResult;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
@@ -52,8 +53,9 @@ public class ValveBlock extends WrenchableBlock
 	{
 		super(Block.Properties.of()
 			.setId(id)
-			.strength(Settings.valveBlockHardness(), Settings.valveBlockResistance())
-			.sound(SoundType.METAL));
+			.strength(Settings.valveBlockDestructionTime(), Settings.valveBlockResistance())
+			.sound(SoundType.METAL)
+			.pushReaction(PushReaction.BLOCK));
 	}
 
 	@Override
