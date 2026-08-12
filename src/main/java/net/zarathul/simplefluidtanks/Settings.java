@@ -15,12 +15,12 @@ public final class Settings
 	public static final Identifier VALVE_BLOCK_DESTRUCTION_TIME = Utils.createModIdentifier("valve_block_destruction_time");
 	public static final Identifier VALVE_BLOCK_RESISTANCE = Utils.createModIdentifier("valve_block_resistance");
 
-	public static int   bucketsPerTank()            { return (int)   Config.getSetting(BUCKETS_PER_TANK).get().value; }
-	public static int   bucketsPerPortableTank()    { return (int)   Config.getSetting(BUCKETS_PER_PORTABLE_TANK).get().value; }
-	public static float tankBlockDestructionTime()  { return (float) Config.getSetting(TANK_BLOCK_DESTRUCTION_TIME).get().value; }
-	public static float tankBlockResistance()       { return (float) Config.getSetting(TANK_BLOCK_RESISTANCE).get().value; }
-	public static float valveBlockDestructionTime() { return (float) Config.getSetting(VALVE_BLOCK_DESTRUCTION_TIME).get().value; }
-	public static float valveBlockResistance()      { return (float) Config.getSetting(VALVE_BLOCK_RESISTANCE).get().value; }
+	public static int   bucketsPerTank()            { return (int)   Config.getSetting(BUCKETS_PER_TANK).value; }
+	public static int   bucketsPerPortableTank()    { return (int)   Config.getSetting(BUCKETS_PER_PORTABLE_TANK).value; }
+	public static float tankBlockDestructionTime()  { return (float) Config.getSetting(TANK_BLOCK_DESTRUCTION_TIME).value; }
+	public static float tankBlockResistance()       { return (float) Config.getSetting(TANK_BLOCK_RESISTANCE).value; }
+	public static float valveBlockDestructionTime() { return (float) Config.getSetting(VALVE_BLOCK_DESTRUCTION_TIME).value; }
+	public static float valveBlockResistance()      { return (float) Config.getSetting(VALVE_BLOCK_RESISTANCE).value; }
 
 	public static void init()
 	{

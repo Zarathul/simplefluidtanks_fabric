@@ -37,7 +37,7 @@ public class SimpleFluidTanks implements ModInitializer
 	{
 		Config.initialize(MOD_ID, "Simple Fluid Tanks", false, Settings::init);
 		Config.registerServerSideNetworking();
-		CommandRegistrationCallback.EVENT.register(Config::registerCommand);
+		CommandRegistrationCallback.EVENT.register((dispatcher, _, _) -> Config.registerCommand(dispatcher, MOD_ID));
 
 		// Register Blocks & Items.
 		BlocksAndItems.initialize();
