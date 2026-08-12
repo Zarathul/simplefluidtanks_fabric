@@ -17,7 +17,7 @@
 	"item.simplefluidtanks.portable_tank.tooltip": "§7Contents: %s%s(%s)\n§7Amount: %s/%s\n§7FillMode: %s\n§7Hold §e§oshift §7for details.",
 	"item.simplefluidtanks.portable_tank.tooltip_max": "§7Max",
 	"item.simplefluidtanks.portable_tank.tooltip_single_bucket": "§7Bucket",
-	"item.simplefluidtanks.portable_tank.tooltip_details": "§7A small portable fluid tank.\n§7Hold §bsneak §7when using to fill,\n§7let go to drain.\n§9Holds up to §b%d §9buckets of fluid.",
+	"item.simplefluidtanks.portable_tank.tooltip_details": "§7Use to drain, use while §bsneaking §7to fill.\n§7Use while not looking at a block to \n§7change fill mode. Can pick up and place \n§7fluid source blocks.\n§9Holds up to §b%d §9buckets of fluid.",
 
 	"_comment": "Creative UI tab label",
 	"itemGroup.simplefluidtanks.simplemods": "Simple Mods",
@@ -39,5 +39,5 @@
 	"config.valve_block_resistance.tooltip": "The valves resistance to explosions.",
 
 	"_comment": "Commands",
-	"commands.smods.info": "Maintenance commands for SimpleFluidTanks."
+	"commands.simplefluidtanks.info": "Maintenance commands for SimpleFluidTanks."
 }

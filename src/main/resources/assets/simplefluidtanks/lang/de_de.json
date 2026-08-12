@@ -17,7 +17,7 @@
 	"item.simplefluidtanks.portable_tank.tooltip": "§7Inhalt: %s%s(%s)\n§7Menge: %s/%s\n§7Füllmodus: %s\n§e§oUmschalten §7gedrückt halten für Details.",
 	"item.simplefluidtanks.portable_tank.tooltip_max": "§7Max",
 	"item.simplefluidtanks.portable_tank.tooltip_single_bucket": "§7Eimer",
-	"item.simplefluidtanks.portable_tank.tooltip_details": "§7Ein kleiner tragbarer Flüssigkeitstank.\n§bSchleichen §7beim Benutzen gedrückt halten um zu\n§7Befüllen, los lassen zum leeren.\n§9Nimmt bis zu §b%d §9Eimer Flüssigkeit auf.",
+	"item.simplefluidtanks.portable_tank.tooltip_details": "§7Benutzen zum leeren, §bschleichen §7beim \n§7Benutzen um zu befüllen. Benutzen \n§7während kein Block angeschaut wird \n§7um den Füllmodus zu ändern. Kann \n§7Flüssigkeitsquellblöcke aufnehmen \n§7und platzieren. \n§9Nimmt bis zu §b%d §9Eimer Flüssigkeit auf.",
 
 	"_comment": "Creative UI tab label",
 	"itemGroup.simplefluidtanks.simplemods": "Simple Mods",
@@ -39,5 +39,5 @@
 	"config.valve_block_resistance.tooltip": "Der Widerstand eines Ventils gegen Explosionen.",
 
 	"_comment": "Commands",
-	"commands.smods.info": "Wartungsbefehle für SimpleFluidTanks."
+	"commands.simplefluidtanks.info": "Wartungsbefehle für SimpleFluidTanks."
 }
