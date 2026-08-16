@@ -2,6 +2,7 @@ package net.zarathul.simplemodslib;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
@@ -56,30 +57,35 @@ public class SimpleModsLib implements ModInitializer
 		Registry.register(BuiltInRegistries.BLOCK, LOGO_BLOCK_ID, logoBlock);
 		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, CREATIVE_MODE_TAB_ID, creativeModeTab);
 
+		// Make IFluidContainerItems usable on IFluidHandlers while crouching.
+		UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+			if (world.isClientSide() || (!player.isCrouching()) || player.isSpectator()) return InteractionResult.PASS;
+
+			ItemStack heldItem = player.getItemInHand(hand);
+			if (heldItem.getItem() instanceof IFluidContainerItem && FluidHelper.isFluidHandler(world, hit.getBlockPos()))
+			{
+				BlockState blockState = world.getBlockState(hit.getBlockPos());
+				InteractionResult result = blockState.useItemOn(heldItem, world, player, hand, hit);
+
+				return result;
+			}
+
+			return InteractionResult.PASS;
+		});
+
+		// Prevent buckets and water bottles from doing their usual thing when right-clicking an IFluidHandler.
 		UseItemCallback.EVENT.register((player, world, hand) -> {
 			if (player.isSpectator()) return InteractionResult.PASS;
 
 			ItemStack heldItemStack = player.getItemInHand(hand);
 			Item heldItem = heldItemStack.getItem();
-			BlockHitResult hit = ItemAccessor.getPlayerPOVHitResult(world, player, ClipContext.Fluid.NONE);
 
 			if (heldItem instanceof BucketItem || (heldItem instanceof PotionItem && heldItemStack.get(DataComponents.POTION_CONTENTS).is(Potions.WATER)))
 			{
-				// Prevent buckets and water bottles from doing their usual thing when right-clicking an IFluidHandler.
+				BlockHitResult hit = ItemAccessor.getPlayerPOVHitResult(world, player, ClipContext.Fluid.NONE);
 				if (hit.getType() == HitResult.Type.BLOCK && FluidHelper.isFluidHandler(world, hit.getBlockPos()))
 				{
 					return InteractionResult.SUCCESS;
-				}
-			}
-			else if (heldItem instanceof IFluidContainerItem && !world.isClientSide() && player.isCrouching())
-			{
-				// Make IFluidContainerItems usable on IFluidHandlers while crouching.
-				if (FluidHelper.isFluidHandler(world, hit.getBlockPos()))
-				{
-					BlockState blockState = world.getBlockState(hit.getBlockPos());
-					InteractionResult result = blockState.useItemOn(heldItemStack, world, player, hand, hit);
-
-					return result;
 				}
 			}
 
