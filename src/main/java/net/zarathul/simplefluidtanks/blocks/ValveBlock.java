@@ -128,7 +128,7 @@ public class ValveBlock extends WrenchableBlock
 
 			if (valveEntity != null)
 			{
-				FluidHelper.FluidHandlerInteractionResult result = FluidHelper.InteractWithFluidHandler((ServerPlayer)player, hand, valveEntity);
+				if (FluidHelper.InteractWithFluidHandler((ServerPlayer)player, hand, valveEntity).success()) return InteractionResult.SUCCESS_SERVER;
 			}
 			else
 			{

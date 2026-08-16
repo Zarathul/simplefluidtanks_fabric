@@ -327,32 +327,6 @@ public final class Utils
 	}
 
 	/**
-	 * Performs a raycast along the players view axis to get the block the player is looking at.
-	 *
-	 * @param world
-	 * The world.
-	 * @param player
-	 * The player.
-	 * @return
-	 * The result of the raycast. Check type() to see if the raycast did hit a block or not.
-	 */
-	public static BlockHitResult getPlayerPOVHitResult(Level world, Player player)
-	{
-		float pitch = player.xRotO;
-		float yaw = player.yRotO;
-		Vec3 eyePos = player.getEyePosition(1.0F);
-		float h = Mth.cos(-yaw * 0.017453292F - 3.1415927F);
-		float i = Mth.sin(-yaw * 0.017453292F - 3.1415927F);
-		float j = -Mth.cos(-pitch * 0.017453292F);
-		float k = Mth.sin(-pitch * 0.017453292F);
-		float l = i * j;
-		float n = h * j;
-		Vec3 target = eyePos.add((double) l * 5.0D, (double) k * 5.0D, (double) n * 5.0D);
-
-		return world.clip(new ClipContext(eyePos, target, net.minecraft.world.level.ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
-	}
-
-	/**
 	 * Centers an object of a given size in a container at a specified offset.
 	 *
 	 * @param offset
