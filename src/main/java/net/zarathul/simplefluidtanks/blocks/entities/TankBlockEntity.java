@@ -18,7 +18,6 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
-import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplefluidtanks.rendering.ConnectedTexturesHelper;
 import net.zarathul.simplemodslib.api.fluid.FluidStack;
 import org.jspecify.annotations.Nullable;
@@ -187,9 +186,9 @@ public class TankBlockEntity extends BlockEntity
 	 */
 	public ValveBlockEntity getValve()
 	{
-		if (isPartOfTank())
+		if (isPartOfTank() && level != null)
 		{
-			return Utils.getBlockEntityAt(level, ValveBlockEntity.class, valveCoords);
+			return level.getBlockEntity(valveCoords, BlocksAndItems.blockEntityTypeValve).orElse(null);
 		}
 
 		return null;
@@ -204,11 +203,11 @@ public class TankBlockEntity extends BlockEntity
 	 */
 	public boolean setValve(BlockPos valvePos)
 	{
-		if (isPartOfTank() || valvePos == null) return false;
+		if (isPartOfTank() || valvePos == null || level == null) return false;
 
-		ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, valvePos);
+		var valveEntity = level.getBlockEntity(valvePos, BlocksAndItems.blockEntityTypeValve);
 
-		if (valveEntity != null)
+		if (valveEntity.isPresent())
 		{
 			valveCoords = valvePos.immutable();
 			isPartOfTank = true;
@@ -363,18 +362,19 @@ public class TankBlockEntity extends BlockEntity
 	private boolean shouldConnectTo(BlockPos checkPos)
 	{
 		// only check adjacent blocks
-		if (checkPos.getX() < worldPosition.getX() - 1 || checkPos.getX() > worldPosition.getX() + 1 ||
+		if (level == null ||
+			checkPos.getX() < worldPosition.getX() - 1 || checkPos.getX() > worldPosition.getX() + 1 ||
 			checkPos.getY() < worldPosition.getY() - 1 || checkPos.getY() > worldPosition.getY() + 1 ||
 			checkPos.getZ() < worldPosition.getZ() - 1 || checkPos.getZ() > worldPosition.getZ() + 1)
 		{
 			return false;
 		}
 
-		TankBlockEntity connectionCandidate = Utils.getBlockEntityAt(level, TankBlockEntity.class, checkPos);
+		var connectionCandidate = level.getBlockEntity(checkPos, BlocksAndItems.blockEntityTypeTank);
 
-		if (connectionCandidate != null)
+		if (connectionCandidate.isPresent())
 		{
-			return (connectionCandidate.hasValveAt(valveCoords));
+			return (connectionCandidate.get().hasValveAt(valveCoords));
 		}
 
 		return false;

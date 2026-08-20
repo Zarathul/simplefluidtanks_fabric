@@ -14,7 +14,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -26,10 +25,11 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.BlockHitResult;
+import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.ValveBlockEntity;
-import net.zarathul.simplefluidtanks.common.Utils;
+import net.zarathul.simplemodslib.Utils;
 import net.zarathul.simplemodslib.api.fluid.FluidHelper;
 import org.jetbrains.annotations.Nullable;
 
@@ -104,15 +104,15 @@ public class ValveBlock extends WrenchableBlock
 	{
 		if (!level.isClientSide())
 		{
-			ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
+			var valveEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
 
-			if (valveEntity != null)
+			if (valveEntity.isPresent())
 			{
-				valveEntity.formMultiblock();
+				valveEntity.get().formMultiblock();
 			}
 			else
 			{
-				SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
+				SimpleFluidTanks.LOG.error("Missing ValveBlockEntity at {}", pos.toShortString());
 			}
 		}
 
@@ -124,15 +124,15 @@ public class ValveBlock extends WrenchableBlock
 	{
 		if (!level.isClientSide())
 		{
-			ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
+			var valveEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
 
-			if (valveEntity != null)
+			if (valveEntity.isPresent())
 			{
-				if (FluidHelper.InteractWithFluidHandler((ServerPlayer)player, hand, valveEntity).success()) return InteractionResult.SUCCESS_SERVER;
+				if (FluidHelper.InteractWithFluidHandler((ServerPlayer)player, hand, valveEntity.get()).success()) return InteractionResult.SUCCESS_SERVER;
 			}
 			else
 			{
-				SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
+				SimpleFluidTanks.LOG.error("Missing ValveBlockEntity at {}", pos.toShortString());
 			}
 		}
 
@@ -150,10 +150,11 @@ public class ValveBlock extends WrenchableBlock
 	@Override
 	protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction)
 	{
-		ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
+		var valveEntityOptional = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
 
-		if (valveEntity != null)
+		if (valveEntityOptional.isPresent())
 		{
+			ValveBlockEntity valveEntity = valveEntityOptional.get();
 			float fluidAmount = valveEntity.getFluidAmount();
 			float capacity = valveEntity.getCapacity();
 			int signalStrength = Utils.getComparatorLevel(fluidAmount, capacity);
@@ -161,7 +162,7 @@ public class ValveBlock extends WrenchableBlock
 			return signalStrength;
 		}
 
-		SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
+		SimpleFluidTanks.LOG.error("Missing ValveBlockEntity at {}", pos.toShortString());
 		return 0;
 	}
 
@@ -170,13 +171,6 @@ public class ValveBlock extends WrenchableBlock
 	{
 		handleDestruction(level, pos, state);
 		return super.playerWillDestroy(level, pos, state, player);
-	}
-
-	@Override
-	public void destroy(LevelAccessor level, BlockPos pos, BlockState state)
-	{
-		var e = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
-		super.destroy(level, pos, state);
 	}
 
 	@Override
@@ -191,22 +185,23 @@ public class ValveBlock extends WrenchableBlock
 	{
 		// On sneak use: disband the multiblock | On use: rebuild the multiblock
 
-		ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
-		if (valveEntity == null)
+		var valveEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
+
+		if (valveEntity.isEmpty())
 		{
-			SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
+			SimpleFluidTanks.LOG.error("Missing ValveBlockEntity at {}", pos.toShortString());
 			return;
 		}
 
 		if (player.isCrouching())
 		{
-			valveEntity.disbandMultiblock(pos);
+			valveEntity.get().disbandMultiblock(pos);
 			level.destroyBlock(pos, true);
 		}
 		else
 		{
 			// rebuild the tank
-			valveEntity.formMultiblock();
+			valveEntity.get().formMultiblock();
 		}
 	}
 
@@ -220,15 +215,15 @@ public class ValveBlock extends WrenchableBlock
 	{
 		if (!level.isClientSide())
 		{
-			ValveBlockEntity valveEntity = Utils.getBlockEntityAt(level, ValveBlockEntity.class, pos);
+			var valveEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
 
-			if (valveEntity == null)
+			if (valveEntity.isEmpty())
 			{
-				SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}", pos.toShortString());
+				SimpleFluidTanks.LOG.error("Missing ValveBlockEntity at {}", pos.toShortString());
 				return;
 			}
 
-			valveEntity.disbandMultiblock(pos);
+			valveEntity.get().disbandMultiblock(pos);
 		}
 	}
 

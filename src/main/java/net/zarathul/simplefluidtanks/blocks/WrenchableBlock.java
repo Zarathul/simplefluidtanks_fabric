@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.zarathul.simplefluidtanks.common.Utils;
+import net.zarathul.simplefluidtanks.BlocksAndItems;
 
 /**
  * A base class for blocks that have custom behavior when a wrench is used on them.
@@ -27,7 +27,7 @@ public abstract class WrenchableBlock extends BaseEntityBlock
 	{
 		ItemStack heldStack = player.getItemInHand(hand);
 
-		if (!heldStack.isEmpty() && Utils.isWrenchItem(heldStack.getItem()))
+		if (!heldStack.isEmpty() && BlocksAndItems.isWrenchItem(heldStack.getItem()))
 		{
 			if (!level.isClientSide())
 			{

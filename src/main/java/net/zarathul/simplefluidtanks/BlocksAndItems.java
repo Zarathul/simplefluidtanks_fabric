@@ -11,7 +11,6 @@ import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
 import net.zarathul.simplefluidtanks.blocks.entities.TankBlockEntity;
 import net.zarathul.simplefluidtanks.blocks.entities.ValveBlockEntity;
-import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplefluidtanks.items.PortableTankItem;
 import net.zarathul.simplefluidtanks.items.TankItem;
 import net.zarathul.simplefluidtanks.items.ValveItem;
@@ -57,16 +56,16 @@ public final class BlocksAndItems
 		itemWrench = new WrenchItem(createItemKey(WRENCH_ITEM_NAME));
 		itemPortableTank = new PortableTankItem(createItemKey(PORTABLE_TANK_ITEM_NAME), Settings.bucketsPerPortableTank() * FluidStack.BUCKET_VOLUME);
 
-		Registry.register(BuiltInRegistries.ITEM, Utils.createModIdentifier(TANK_ITEM_NAME), itemTank);
-		Registry.register(BuiltInRegistries.BLOCK, Utils.createModIdentifier(TANK_BLOCK_NAME), blockTank);
+		Registry.register(BuiltInRegistries.ITEM, SimpleFluidTanks.modId(TANK_ITEM_NAME), itemTank);
+		Registry.register(BuiltInRegistries.BLOCK, SimpleFluidTanks.modId(TANK_BLOCK_NAME), blockTank);
 		blockEntityTypeTank = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, createBlockEntityKey(TANK_BLOCK_ENTITY_NAME), new BlockEntityType<>(TankBlockEntity::new, Set.of(blockTank)));
 
-		Registry.register(BuiltInRegistries.ITEM, Utils.createModIdentifier(VALVE_ITEM_NAME), itemValve);
-		Registry.register(BuiltInRegistries.BLOCK, Utils.createModIdentifier(VALVE_BLOCK_NAME), blockValve);
+		Registry.register(BuiltInRegistries.ITEM, SimpleFluidTanks.modId(VALVE_ITEM_NAME), itemValve);
+		Registry.register(BuiltInRegistries.BLOCK, SimpleFluidTanks.modId(VALVE_BLOCK_NAME), blockValve);
 		blockEntityTypeValve = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, createBlockEntityKey(VALVE_BLOCK_ENTITY_NAME), new BlockEntityType<>(ValveBlockEntity::new, Set.of(blockValve)));
 
-		Registry.register(BuiltInRegistries.ITEM, Utils.createModIdentifier(WRENCH_ITEM_NAME), itemWrench);
-		Registry.register(BuiltInRegistries.ITEM, Utils.createModIdentifier(PORTABLE_TANK_ITEM_NAME), itemPortableTank);
+		Registry.register(BuiltInRegistries.ITEM, SimpleFluidTanks.modId(WRENCH_ITEM_NAME), itemWrench);
+		Registry.register(BuiltInRegistries.ITEM, SimpleFluidTanks.modId(PORTABLE_TANK_ITEM_NAME), itemPortableTank);
 
 		SimpleModsLib.creativeModeTabItems.add(itemTank);
 		SimpleModsLib.creativeModeTabItems.add(itemValve);
@@ -76,21 +75,39 @@ public final class BlocksAndItems
 
 	public static void initialize()
 	{
-		SimpleFluidTanks.log.info("Initializing blocks and items.");
+		SimpleFluidTanks.LOG.info("Initializing blocks and items.");
 	}
 
 	private static ResourceKey<Block> createBlockKey(String name)
 	{
-		return ResourceKey.create(Registries.BLOCK, Utils.createModIdentifier(name));
+		return ResourceKey.create(Registries.BLOCK, SimpleFluidTanks.modId(name));
 	}
 
 	private static ResourceKey<BlockEntityType<?>> createBlockEntityKey(String name)
 	{
-		return ResourceKey.create(Registries.BLOCK_ENTITY_TYPE, Utils.createModIdentifier(name));
+		return ResourceKey.create(Registries.BLOCK_ENTITY_TYPE, SimpleFluidTanks.modId(name));
 	}
 
 	private static ResourceKey<Item> createItemKey(String name)
 	{
-		return ResourceKey.create(Registries.ITEM, Utils.createModIdentifier(name));
+		return ResourceKey.create(Registries.ITEM, SimpleFluidTanks.modId(name));
+	}
+
+	/**
+	 * Checks if an item is a wrench.
+	 *
+	 * @param item
+	 * The item to check.
+	 *
+	 * @return
+	 * <c>true</c> if the item is a wrench, otherwise <c>false</c>.
+	 */
+	public static boolean isWrenchItem(Item item)
+	{
+		// TODO: Add support for other wrenches or tools
+		return (item == itemWrench/*
+		|| (Utils.isInterfaceAvailable("cofh.api.item", "IToolHammer") && item instanceof IToolHammer)
+		|| (Utils.isInterfaceAvailable("blusunrize.immersiveengineering.api.tool", "ITool") && item instanceof ITool)
+		|| (Utils.isInterfaceAvailable("appeng.api.implementations.items", "IAEWrench") && item instanceof IAEWrench)*/);
 	}
 }

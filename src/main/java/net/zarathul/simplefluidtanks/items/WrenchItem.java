@@ -10,7 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
-import net.zarathul.simplefluidtanks.common.Utils;
+import net.zarathul.simplemodslib.Utils;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;

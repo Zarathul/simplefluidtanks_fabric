@@ -4,25 +4,13 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.PotionItem;
-import net.minecraft.world.item.alchemy.PotionContents;
-import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.zarathul.simplefluidtanks.blocks.WrenchableBlock;
-import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplemodslib.api.configuration.Config;
-import net.zarathul.simplemodslib.api.fluid.FluidHelper;
-import net.zarathul.simplemodslib.api.fluid.IFluidHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,21 +23,23 @@ public class SimpleFluidTanks implements ModInitializer
 	public static final String CONFIG_GUI_TITLE = "Simple Fluid Tanks";
 
 	// logger
-	public static final Logger log = LogManager.getLogger(MOD_ID);
+	public static final Logger LOG = LogManager.getLogger(MOD_ID);
+
+	public static Identifier modId(String path) { return Identifier.fromNamespaceAndPath(MOD_ID, path); }
 
 	@Override
 	public void onInitialize()
 	{
+		// Config
 		Config.initialize(MOD_ID, "Simple Fluid Tanks", false, Settings::init);
 		Config.registerServerSideNetworking();
 		CommandRegistrationCallback.EVENT.register((dispatcher, _, _) -> Config.registerCommand(dispatcher, MOD_ID));
-
-		// Register Blocks & Items.
-		BlocksAndItems.initialize();
-
 		ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
 			Config.initialize(MOD_ID, CONFIG_GUI_TITLE, server.isDedicatedServer(), Settings::init);
 		});
+
+		// Register Blocks & Items.
+		BlocksAndItems.initialize();
 
 		// Necessary for dismantling blocks with the wrench on crouch right-click.
 		// Without this WrenchableBlock.use() is never called when crouching.

@@ -17,11 +17,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.PushReaction;
+import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.TankBlockEntity;
 import net.zarathul.simplefluidtanks.blocks.entities.ValveBlockEntity;
-import net.zarathul.simplefluidtanks.common.Utils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.BiConsumer;
@@ -101,21 +101,22 @@ public class TankBlock extends WrenchableBlock
 		// appropriate item, telling the connected valve to rebuild in the process
 		if (player.isCrouching())
 		{
-			TankBlockEntity tankEntity = Utils.getBlockEntityAt(world, TankBlockEntity.class, pos);
-			if (tankEntity == null)
+			var tankEntityOptional = world.getBlockEntity(pos, BlocksAndItems.blockEntityTypeTank);
+			if (tankEntityOptional.isEmpty())
 			{
-				SimpleFluidTanks.log.error("Missing TankBlockEntity at {}.", pos.toShortString());
+				SimpleFluidTanks.LOG.error("Missing TankBlockEntity at {}.", pos.toShortString());
 				return;
 			}
 
 			ValveBlockEntity valveEntity = null;
+			TankBlockEntity tankEntity = tankEntityOptional.get();
 
 			if (tankEntity.isPartOfTank())
 			{
 				valveEntity = tankEntity.getValve();
 				if (valveEntity == null)
 				{
-					SimpleFluidTanks.log.error("Missing ValveBlockEntity at {}.", tankEntity.getValveCoords().toShortString());
+					SimpleFluidTanks.LOG.error("Missing ValveBlockEntity at {}.", tankEntity.getValveCoords().toShortString());
 				}
 
 				// set the WAS_WRENCHED property to prevent the multiblock from disbanding
@@ -145,7 +146,7 @@ public class TankBlock extends WrenchableBlock
 			// Only disband the multiblock if the block was not wrenched.
 			if (!state.getValue(WAS_WRENCHED))
 			{
-				ValveBlockEntity valveEntity = Utils.getValve(level, pos);
+				ValveBlockEntity valveEntity = ValveBlockEntity.getValve(level, pos);
 
 				if (valveEntity != null)
 				{

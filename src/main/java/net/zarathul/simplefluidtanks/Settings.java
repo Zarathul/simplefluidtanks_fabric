@@ -1,19 +1,18 @@
 package net.zarathul.simplefluidtanks;
 
 import net.minecraft.resources.Identifier;
-import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplemodslib.api.configuration.Config;
 import net.zarathul.simplemodslib.api.configuration.ConfigSetting;
 
 public final class Settings
 {
 
-	public static final Identifier BUCKETS_PER_TANK = Utils.createModIdentifier("buckets_per_tank");
-	public static final Identifier BUCKETS_PER_PORTABLE_TANK = Utils.createModIdentifier("buckets_per_portable_tank");
-	public static final Identifier TANK_BLOCK_DESTRUCTION_TIME = Utils.createModIdentifier("tank_block_destruction_time");
-	public static final Identifier TANK_BLOCK_RESISTANCE = Utils.createModIdentifier("tank_block_resistance");
-	public static final Identifier VALVE_BLOCK_DESTRUCTION_TIME = Utils.createModIdentifier("valve_block_destruction_time");
-	public static final Identifier VALVE_BLOCK_RESISTANCE = Utils.createModIdentifier("valve_block_resistance");
+	public static final Identifier BUCKETS_PER_TANK = SimpleFluidTanks.modId("buckets_per_tank");
+	public static final Identifier BUCKETS_PER_PORTABLE_TANK = SimpleFluidTanks.modId("buckets_per_portable_tank");
+	public static final Identifier TANK_BLOCK_DESTRUCTION_TIME = SimpleFluidTanks.modId("tank_block_destruction_time");
+	public static final Identifier TANK_BLOCK_RESISTANCE = SimpleFluidTanks.modId("tank_block_resistance");
+	public static final Identifier VALVE_BLOCK_DESTRUCTION_TIME = SimpleFluidTanks.modId("valve_block_destruction_time");
+	public static final Identifier VALVE_BLOCK_RESISTANCE = SimpleFluidTanks.modId("valve_block_resistance");
 
 	public static int   bucketsPerTank()            { return (int)   Config.getSetting(BUCKETS_PER_TANK).value; }
 	public static int   bucketsPerPortableTank()    { return (int)   Config.getSetting(BUCKETS_PER_PORTABLE_TANK).value; }

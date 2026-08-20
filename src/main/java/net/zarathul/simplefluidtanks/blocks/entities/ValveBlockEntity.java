@@ -13,6 +13,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -25,7 +26,6 @@ import net.zarathul.simplefluidtanks.blocks.ValveBlock;
 import net.zarathul.simplefluidtanks.common.BasicAStar;
 import net.zarathul.simplefluidtanks.common.BlockSearchMode;
 import net.zarathul.simplefluidtanks.common.Directions;
-import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplemodslib.api.fluid.FluidStack;
 import net.zarathul.simplemodslib.api.fluid.IFluidHandler;
 import org.jspecify.annotations.Nullable;
@@ -246,13 +246,13 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	 */
 	public void disbandMultiblock(boolean suppressBlockUpdates, BlockPos ignorePos)
 	{
-		for (BlockPos tankCoords : tankPriorities.values())
+		for (BlockPos tankPos : tankPriorities.values())
 		{
-			TankBlockEntity tankEntity = Utils.getBlockEntityAt(level, TankBlockEntity.class, tankCoords);
+			var tankEntity = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
 
-			if (tankEntity != null && (!tankCoords.equals(ignorePos)))
+			if (tankEntity.isPresent() && (!tankPos.equals(ignorePos)))
 			{
-				tankEntity.disconnect(suppressBlockUpdates);
+				tankEntity.get().disconnect(suppressBlockUpdates);
 			}
 		}
 
@@ -310,12 +310,13 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		ArrayList<TankBlockEntity> tankEntities = new ArrayList<TankBlockEntity>(tankPriorities.size());
 
 		// set the valve for all connected tanks
-		for (BlockPos tankCoords : tankPriorities.values())
+		for (BlockPos tankPos : tankPriorities.values())
 		{
-			TankBlockEntity tankEntity = Utils.getBlockEntityAt(level, TankBlockEntity.class, tankCoords);
+			var tankEntityOptional = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
 
-			if (tankEntity != null)
+			if (tankEntityOptional.isPresent())
 			{
+				TankBlockEntity tankEntity = tankEntityOptional.get();
 				tankEntity.setValve(worldPosition);
 				tankEntities.add(tankEntity);
 			}
@@ -338,13 +339,13 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	{
 		Collection<BlockPos> tanksToUpdate = Collections2.filter(tanksBeforeDisband, Predicates.not(Predicates.in(tanks)));
 
-		for (BlockPos tank : tanksToUpdate)
+		for (BlockPos tankPos : tanksToUpdate)
 		{
-			TankBlockEntity tankEntity = Utils.getBlockEntityAt(level, TankBlockEntity.class, tank);
+			var tankEntity = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
 
-			if (tankEntity != null)
+			if (tankEntity.isPresent())
 			{
-				tankEntity.setChanged();
+				tankEntity.get().setChanged();
 			}
 		}
 
@@ -375,13 +376,13 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 			// there is nothing to distribute or the internal tank is full (no fill percentage calculations needed)
 			int fillPercentage = (amountToDistribute == 0) ? 0 : 100;
 
-			for (BlockPos tankCoords : tankPriorities.values())
+			for (BlockPos tankPos : tankPriorities.values())
 			{
-				TankBlockEntity tankEntity = Utils.getBlockEntityAt(level, TankBlockEntity.class, tankCoords);
+				var tankEntity = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
 
-				if (tankEntity != null)
+				if (tankEntity.isPresent())
 				{
-					tankEntity.setFillLevel(Utils.getFluidLevel(fillPercentage), forceBlockUpdates);
+					tankEntity.get().setFillLevel(getFluidLevel(fillPercentage), forceBlockUpdates);
 				}
 			}
 		}
@@ -401,13 +402,13 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 				int capacity = tanksToFill.size() * Settings.bucketsPerTank() * FluidStack.BUCKET_VOLUME;
 				int fillPercentage = Mth.clamp((int) Math.ceil((double) amountToDistribute / (double) capacity * 100d), 0, 100);
 
-				for (BlockPos tank : tanksToFill)
+				for (BlockPos tankPos : tanksToFill)
 				{
-					TankBlockEntity tankEntity = Utils.getBlockEntityAt(level, TankBlockEntity.class, tank);
+					var tankEntity = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
 
-					if (tankEntity != null)
+					if (tankEntity.isPresent())
 					{
-						tankEntity.setFillLevel(Utils.getFluidLevel(fillPercentage), forceBlockUpdates);
+						tankEntity.get().setFillLevel(getFluidLevel(fillPercentage), forceBlockUpdates);
 					}
 				}
 
@@ -955,32 +956,32 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	/**
 	 * Checks if the block at the specified location is a {@link TankBlock} that is not connected to a {@link ValveBlock}.
 	 * 
-	 * @param block
+	 * @param pos
 	 * The coordinates of the block to check.
-	 * @return <code>true</code> if the specified block is a valid {@link TankBlock}, otherwise <code>false</code>.
+	 * @return <code>true</code> if the block at the specified position is a valid {@link TankBlock}, otherwise <code>false</code>.
 	 */
-	private boolean isUnlinkedTank(BlockPos block)
+	private boolean isUnlinkedTank(BlockPos pos)
 	{
-		if (block == null)
+		if (pos == null || level == null)
 		{
 			return false;
 		}
 		
-		BlockState state = level.getBlockState(block);
+		BlockState state = level.getBlockState(pos);
 
 		if (state.getBlock() == BlocksAndItems.blockTank)
 		{
-			TankBlockEntity tankEntity = Utils.getBlockEntityAt(level, TankBlockEntity.class, block);
+			var tankEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeTank);
 
-			if (tankEntity != null)
+			if (tankEntity.isPresent())
 			{
-				return !tankEntity.isPartOfTank();
+				return !tankEntity.get().isPartOfTank();
 			}
 		}
 		else
 		{
 			// this valve is also considered an unlinked tank as long as it has no associated tanks
-			return (block.equals(worldPosition) && tankPriorities.isEmpty());
+			return (pos.equals(worldPosition) && tankPriorities.isEmpty());
 		}
 
 		return false;
@@ -1038,14 +1039,14 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		}
 
 		ValueOutput tankPrioritiesTag = output.child("TankPriorities");
-		BlockPos currentCoords;
+		BlockPos currentPos;
 		int[] serializableEntry;
 		int i = 0;
 
 		for (Entry<Integer, BlockPos> entry : tankPriorities.entries())
 		{
-			currentCoords = entry.getValue();
-			serializableEntry = new int[] { entry.getKey(), currentCoords.getX(), currentCoords.getY(), currentCoords.getZ() };
+			currentPos = entry.getValue();
+			serializableEntry = new int[] { entry.getKey(), currentPos.getX(), currentPos.getY(), currentPos.getZ() };
 			tankPrioritiesTag.putIntArray(Integer.toString(i), serializableEntry);
 			i++;
 		}
@@ -1079,6 +1080,49 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 				}
 			}
 		}
+	}
+	/**
+	 *
+	 * Gets the {@link ValveBlock}s {@link BlockEntity} for a linked {@link TankBlock}.
+	 *
+	 * @return The valves {@link ValveBlockEntity}<br>
+	 * or<br>
+	 * <code>null</code> if no linked {@link ValveBlock} was found.
+	 * @param world
+	 * The world.
+	 * @param pos
+	 * The {@link TankBlock}s coordinates.
+	 */
+	public static ValveBlockEntity getValve(LevelAccessor world, BlockPos pos)
+	{
+		if (world != null && pos != null)
+		{
+			var tankEntity = world.getBlockEntity(pos, BlocksAndItems.blockEntityTypeTank);
+
+			if (tankEntity.isPresent())
+			{
+				ValveBlockEntity valveEntity = tankEntity.get().getValve();
+				return valveEntity;
+			}
+		}
+
+		return null;
+	}
+	/**
+	 *
+	 * Calculates the fluid level for the specified fill percentage.
+	 *
+	 * @param fillPercentage
+	 * The fill percentage.
+	 * @return
+	 * A value between 0 and {@link TankBlockEntity#FILL_LEVELS} (inclusive).
+	 */
+	public static int getFluidLevel(int fillPercentage)
+	{
+		int level = (int)Math.round((fillPercentage / 100.0d) * TankBlockEntity.FILL_LEVELS);
+
+		// Make sure that even for small amounts the fluid is rendered at the first level.
+		return (fillPercentage > 0) ? Math.max(1, level) : 0;
 	}
 
 	//

@@ -20,8 +20,8 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.zarathul.simplefluidtanks.BlocksAndItems;
+import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.TankBlockEntity;
-import net.zarathul.simplefluidtanks.common.Utils;
 import net.zarathul.simplemodslib.api.fluid.FluidHelper;
 import org.jspecify.annotations.Nullable;
 
@@ -181,7 +181,7 @@ public class TankBlockStateModel extends WrapperBlockStateModel
 
 	private static TextureAtlasSprite getModTextureAtlasSprite(String textureName)
 	{
-		return getTextureAtlasSprite(Utils.createModIdentifier(textureName));
+		return getTextureAtlasSprite(SimpleFluidTanks.modId(textureName));
 	}
 
 	private static TextureAtlasSprite getMcTextureAtlasSprite(String textureName)
