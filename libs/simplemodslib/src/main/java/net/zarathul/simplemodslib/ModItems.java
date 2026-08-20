@@ -22,6 +22,11 @@ public final class ModItems
 	private static final ItemRegistrar REGISTRAR = new ItemRegistrar(SimpleModsLib.MOD_ID);
 	public static final LogoItem LOGO = REGISTRAR.register("logo", ModBlocks.LOGO, LogoItem::new);
 
+	public static void init()
+	{
+		SimpleModsLib.LOG.info("Registering items.");
+	}
+
 	public static InteractionResult useItemCallback(Player player, Level level, InteractionHand hand)
 	{
 		// Prevent buckets and water bottles from doing their usual thing when right-clicking an IFluidHandler.

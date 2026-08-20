@@ -8,4 +8,9 @@ public final class ModComponents
 {
 	private static final ComponentRegistrar REGISTRAR = new ComponentRegistrar(SimpleModsLib.MOD_ID);
 	public static final DataComponentType<FluidContainerComponent> FLUID_CONTAINER_COMPONENT = REGISTRAR.register("fluid_container", FluidContainerComponent.CODEC);
+
+	public static void init()
+	{
+		SimpleModsLib.LOG.info("Registering components.");
+	}
 }
