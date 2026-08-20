@@ -14,7 +14,12 @@ import net.zarathul.simplemodslib.api.fluid.IFluidContainerItem;
 public final class ModBlocks
 {
 	private static final BlockRegistrar REGISTRAR = new BlockRegistrar(SimpleModsLib.MOD_ID);
-	public static final LogoBlock LOGO = REGISTRAR.register("LOGO", LogoBlock::new);
+	public static final LogoBlock LOGO = REGISTRAR.register("logo", LogoBlock::new);
+
+	public static void init()
+	{
+		SimpleModsLib.LOG.info("Registering blocks.");
+	}
 
 	public static InteractionResult useBlockCallback(Player player, Level level, InteractionHand hand, BlockHitResult hit)
 	{

@@ -35,6 +35,10 @@ public class SimpleModsLib implements ModInitializer
 	{
 		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, CREATIVE_MODE_TAB_ID, creativeModeTab);
 
+		ModBlocks.init();
+		ModItems.init();
+		ModComponents.init();
+
 		UseBlockCallback.EVENT.register(ModBlocks::useBlockCallback);
 		UseItemCallback.EVENT.register(ModItems::useItemCallback);
 	}
