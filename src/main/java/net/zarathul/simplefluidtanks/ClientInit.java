@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.zarathul.simplefluidtanks.items.ModItems;
 import net.zarathul.simplefluidtanks.rendering.ModelLoadingWatchdog;
 import net.zarathul.simplemodslib.api.configuration.Config;
 
@@ -21,21 +22,21 @@ public class ClientInit implements ClientModInitializer
 
 		// Set tooltips for items.
 		ItemTooltipCallback.EVENT.register((stack, tooltipContext, tooltipFlag, lines) -> {
-			if (stack.getItem() == BlocksAndItems.itemValve)
+			if (stack.getItem() == ModItems.VALVE)
 			{
-				BlocksAndItems.itemValve.addTooltip(stack, tooltipContext, tooltipFlag, lines);
+				ModItems.VALVE.addTooltip(stack, tooltipContext, tooltipFlag, lines);
 			}
-			else if (stack.getItem() == BlocksAndItems.itemTank)
+			else if (stack.getItem() == ModItems.TANK)
 			{
-				BlocksAndItems.itemTank.addTooltip(stack, tooltipContext, tooltipFlag, lines);
+				ModItems.TANK.addTooltip(stack, tooltipContext, tooltipFlag, lines);
 			}
-			else if (stack.getItem() == BlocksAndItems.itemWrench)
+			else if (stack.getItem() == ModItems.WRENCH)
 			{
-				BlocksAndItems.itemWrench.addTooltip(stack, tooltipContext, tooltipFlag, lines);
+				ModItems.WRENCH.addTooltip(stack, tooltipContext, tooltipFlag, lines);
 			}
-			else if (stack.getItem() == BlocksAndItems.itemPortableTank)
+			else if (stack.getItem() == ModItems.PORTABLE_TANK)
 			{
-				BlocksAndItems.itemPortableTank.addTooltip(stack, tooltipContext, tooltipFlag, lines);
+				ModItems.PORTABLE_TANK.addTooltip(stack, tooltipContext, tooltipFlag, lines);
 			}
 		});
 	}

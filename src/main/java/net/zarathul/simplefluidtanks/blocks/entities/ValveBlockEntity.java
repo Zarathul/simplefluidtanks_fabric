@@ -19,8 +19,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.Settings;
+import net.zarathul.simplefluidtanks.blocks.ModBlocks;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
 import net.zarathul.simplefluidtanks.common.BasicAStar;
@@ -75,7 +75,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	
 	public ValveBlockEntity(final BlockPos pos, final BlockState state)
 	{
-		super(BlocksAndItems.blockEntityTypeValve, pos, state);
+		super(ModBlocks.VALVE_ENTITY, pos, state);
 
 		tankPriorities = ArrayListMultimap.create();
 		tankFacingSides = -1;
@@ -140,8 +140,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 			level.sendBlockUpdated(worldPosition, oldState, newState, Block.UPDATE_ALL);
 		}
 	}
-
-	public byte getTankFacingSides() { return tankFacingSides; }
 
 	/**
 	 * Gets the amount of fluid in the multiblock tank.
@@ -248,7 +246,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	{
 		for (BlockPos tankPos : tankPriorities.values())
 		{
-			var tankEntity = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
+			var tankEntity = level.getBlockEntity(tankPos, ModBlocks.TANK_ENTITY);
 
 			if (tankEntity.isPresent() && (!tankPos.equals(ignorePos)))
 			{
@@ -259,7 +257,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		if (suppressBlockUpdates)
 		{
 			// This Set is used later to update TankBlocks that are no longer part of the multiblock structure.
-			tanksBeforeDisband = new HashSet<BlockPos>();
+			tanksBeforeDisband = new HashSet<>();
 			tanksBeforeDisband.addAll(tankPriorities.values());
 		}
 
@@ -307,12 +305,12 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		generateTankList();
 		computeFillPriorities();
 
-		ArrayList<TankBlockEntity> tankEntities = new ArrayList<TankBlockEntity>(tankPriorities.size());
+		ArrayList<TankBlockEntity> tankEntities = new ArrayList<>(tankPriorities.size());
 
 		// set the valve for all connected tanks
 		for (BlockPos tankPos : tankPriorities.values())
 		{
-			var tankEntityOptional = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
+			var tankEntityOptional = level.getBlockEntity(tankPos, ModBlocks.TANK_ENTITY);
 
 			if (tankEntityOptional.isPresent())
 			{
@@ -341,7 +339,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 
 		for (BlockPos tankPos : tanksToUpdate)
 		{
-			var tankEntity = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
+			var tankEntity = level.getBlockEntity(tankPos, ModBlocks.TANK_ENTITY);
 
 			if (tankEntity.isPresent())
 			{
@@ -378,7 +376,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 
 			for (BlockPos tankPos : tankPriorities.values())
 			{
-				var tankEntity = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
+				var tankEntity = level.getBlockEntity(tankPos, ModBlocks.TANK_ENTITY);
 
 				if (tankEntity.isPresent())
 				{
@@ -392,19 +390,19 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 			int[] priorities = Ints.toArray(tankPriorities.keySet());
 			Arrays.sort(priorities);
 
-			Collection<BlockPos> tanksToFill = null;
+			Collection<BlockPos> tanksToFill;
 
 			// for each priority get all the TankBlocks and fill them evenly
-			for (int i = 0; i < priorities.length; i++)
+			for (int priority : priorities)
 			{
-				tanksToFill = tankPriorities.get(priorities[i]);
+				tanksToFill = tankPriorities.get(priority);
 
 				int capacity = tanksToFill.size() * Settings.bucketsPerTank() * FluidStack.BUCKET_VOLUME;
 				int fillPercentage = Mth.clamp((int) Math.ceil((double) amountToDistribute / (double) capacity * 100d), 0, 100);
 
 				for (BlockPos tankPos : tanksToFill)
 				{
-					var tankEntity = level.getBlockEntity(tankPos, BlocksAndItems.blockEntityTypeTank);
+					var tankEntity = level.getBlockEntity(tankPos, ModBlocks.TANK_ENTITY);
 
 					if (tankEntity.isPresent())
 					{
@@ -422,10 +420,10 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	 */
 	private void generateTankList()
 	{
-		tanks = new HashSet<BlockPos>();
+		tanks = new HashSet<>();
 
-		ArrayList<BlockPos> currentTanks = new ArrayList<BlockPos>();
-		ArrayList<BlockPos> newTanks = new ArrayList<BlockPos>();
+		ArrayList<BlockPos> currentTanks = new ArrayList<>();
+		ArrayList<BlockPos> newTanks = new ArrayList<>();
 		Collection<BlockPos> adjacentTanks;
 
 		currentTanks.add(worldPosition);
@@ -450,7 +448,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 			currentTanks.addAll(newTanks);
 			newTanks.clear();
 		}
-		while (currentTanks.size() > 0);
+		while (!currentTanks.isEmpty());
 	}
 
 	/**
@@ -459,16 +457,16 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	private void computeFillPriorities()
 	{
 		aStar = new BasicAStar();
-		tankToPriorityMappings = new HashMap<BlockPos, Integer>();
+		tankToPriorityMappings = new HashMap<>();
 
-		ArrayList<BlockPos> tanksWithoutLowerTanks = new ArrayList<BlockPos>();
-		ArrayList<BlockPos> currentTanks = new ArrayList<BlockPos>();
+		ArrayList<BlockPos> tanksWithoutLowerTanks = new ArrayList<>();
+		ArrayList<BlockPos> currentTanks = new ArrayList<>();
 		ArrayList<BlockPos> tanksOnSameHeight;
 		ArrayList<BlockPos> lowerTanks;
-		HashMap<BlockPos, Integer> tanksToPrioritize = new HashMap<BlockPos, Integer>();
-		HashSet<BlockPos> newTanks = new HashSet<BlockPos>();
-		HashSet<BlockPos> handledSourceTanks = new HashSet<BlockPos>();
-		HashSet<BlockPos> handledSegmentTanks = new HashSet<BlockPos>();
+		HashMap<BlockPos, Integer> tanksToPrioritize = new HashMap<>();
+		HashSet<BlockPos> newTanks = new HashSet<>();
+		HashSet<BlockPos> handledSourceTanks = new HashSet<>();
+		HashSet<BlockPos> handledSegmentTanks = new HashSet<>();
 
 		currentTanks.add(worldPosition);
 
@@ -496,7 +494,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 				lowerTanks = getClosestLowestTanks(currentTank);
 
 				// handle tanks with lower tanks first, store the rest for later processing
-				if (lowerTanks.get(0) == currentTank)
+				if (lowerTanks.getFirst() == currentTank)
 				{
 					tanksWithoutLowerTanks.add(currentTank);
 					handledSegmentTanks.addAll(lowerTanks);
@@ -570,11 +568,11 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		}
 
 		ArrayList<BlockPos> adjacentTanks;
-		ArrayList<BlockPos> foundTanks = new ArrayList<BlockPos>();
-		ArrayList<BlockPos> currentTanks = new ArrayList<BlockPos>();
+		ArrayList<BlockPos> foundTanks = new ArrayList<>();
+		ArrayList<BlockPos> currentTanks = new ArrayList<>();
 		EnumSet<BlockSearchMode> searchFlags;
-		HashSet<BlockPos> handledTanks = new HashSet<BlockPos>();
-		HashSet<BlockPos> newTanks = new HashSet<BlockPos>();
+		HashSet<BlockPos> handledTanks = new HashSet<>();
+		HashSet<BlockPos> newTanks = new HashSet<>();
 
 		currentTanks.add(startTank);
 
@@ -660,10 +658,10 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		ArrayList<BlockPos> tanksInSegment;
 		ArrayList<BlockPos> adjacentTanks;
 		ArrayList<BlockPos> closestTanksWithTanksBelow;
-		ArrayList<BlockPos> tanksWithTanksBelow = new ArrayList<BlockPos>();
-		ArrayList<BlockPos> newTanks = new ArrayList<BlockPos>();
-		ArrayList<BlockPos> foundTanks = new ArrayList<BlockPos>();
-		ArrayList<BlockPos> currentTanks = new ArrayList<BlockPos>();
+		ArrayList<BlockPos> tanksWithTanksBelow = new ArrayList<>();
+		ArrayList<BlockPos> newTanks = new ArrayList<>();
+		ArrayList<BlockPos> foundTanks = new ArrayList<>();
+		ArrayList<BlockPos> currentTanks = new ArrayList<>();
 
 		currentTanks.add(startTank);
 
@@ -686,7 +684,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 				{
 					adjacentTanks = getAdjacentTanks(segmentTank, BlockSearchMode.Below);
 
-					if (!adjacentTanks.isEmpty() && !hasPriority(adjacentTanks.get(0)))
+					if (!adjacentTanks.isEmpty() && !hasPriority(adjacentTanks.getFirst()))
 					{
 						tanksWithTanksBelow.add(segmentTank);
 					}
@@ -739,7 +737,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 			return null;
 		}
 
-		ArrayList<Integer> distances = new ArrayList<Integer>();
+		ArrayList<Integer> distances = new ArrayList<>();
 		Multimap<Integer, BlockPos> distanceToTanksMappings = ArrayListMultimap.create();
 		int distance;
 
@@ -755,7 +753,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 
 		Collections.sort(distances);
 
-		return new ArrayList<BlockPos>(distanceToTanksMappings.get(distances.get(0)));
+		return new ArrayList<>(distanceToTanksMappings.get(distances.getFirst()));
 	}
 
 	/**
@@ -772,11 +770,11 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 			return null;
 		}
 
-		LinkedHashSet<BlockPos> foundTanks = new LinkedHashSet<BlockPos>();
+		LinkedHashSet<BlockPos> foundTanks = new LinkedHashSet<>();
 		foundTanks.add(firstTank);
 
-		ArrayList<BlockPos> currentTanks = new ArrayList<BlockPos>();
-		ArrayList<BlockPos> newTanks = new ArrayList<BlockPos>();
+		ArrayList<BlockPos> currentTanks = new ArrayList<>();
+		ArrayList<BlockPos> newTanks = new ArrayList<>();
 		Collection<BlockPos> adjacentTanks;
 
 		currentTanks.add(firstTank);
@@ -802,19 +800,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		}
 		while (!currentTanks.isEmpty());
 
-		return new ArrayList<BlockPos>(foundTanks);
-	}
-
-	/**
-	 * Gets all adjacent tanks to the specified one (uses temporary tank list).
-	 * 
-	 * @param block
-	 * The coordinates of the tank to get the adjacent tanks for.
-	 * @return An {@link ArrayList} of the found {@link BlockPos}.
-	 */
-	private ArrayList<BlockPos> getAdjacentTanks(BlockPos block)
-	{
-		return getOrFindAdjacentTanks(block, null, BlockSearchMode.All, true);
+		return new ArrayList<>(foundTanks);
 	}
 
 	/**
@@ -858,34 +844,6 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	}
 
 	/**
-	 * Gets all adjacent tanks to the specified one (uses {@link BlockEntity} data to determine which blocks are valid tanks).
-	 * 
-	 * @param block
-	 * The coordinates of the tank to get the adjacent tanks for.
-	 * @param mode
-	 * Specifies which adjacent tanks should be included.
-	 * @return An {@link ArrayList} of the found {@link BlockPos}.
-	 */
-	private ArrayList<BlockPos> findAdjacentTanks(BlockPos block, BlockSearchMode mode)
-	{
-		return getOrFindAdjacentTanks(block, mode, null, false);
-	}
-
-	/**
-	 * Gets all adjacent tanks to the specified one (uses {@link BlockEntity} data to determine which blocks are valid tanks).
-	 * 
-	 * @param block
-	 * The coordinates of the tank to get the adjacent tanks for.
-	 * @param searchFlags
-	 * Specifies which adjacent tanks should be included.
-	 * @return An {@link ArrayList} of the found {@link BlockPos}.
-	 */
-	private ArrayList<BlockPos> findAdjacentTanks(BlockPos block, EnumSet<BlockSearchMode> searchFlags)
-	{
-		return getOrFindAdjacentTanks(block, null, searchFlags, false);
-	}
-
-	/**
 	 * Gets all adjacent tanks to the specified one.
 	 * 
 	 * @param block
@@ -906,8 +864,8 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 			return null;
 		}
 
-		ArrayList<BlockPos> foundTanks = new ArrayList<BlockPos>();
-		ArrayList<BlockPos> adjacentBlocks = new ArrayList<BlockPos>();
+		ArrayList<BlockPos> foundTanks = new ArrayList<>();
+		ArrayList<BlockPos> adjacentBlocks = new ArrayList<>();
 
 		if (mode == BlockSearchMode.SameLevel || (searchFlags != null && searchFlags.contains(BlockSearchMode.SameLevel)))
 		{
@@ -969,9 +927,9 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 		
 		BlockState state = level.getBlockState(pos);
 
-		if (state.getBlock() == BlocksAndItems.blockTank)
+		if (state.getBlock() == ModBlocks.TANK)
 		{
-			var tankEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeTank);
+			var tankEntity = level.getBlockEntity(pos, ModBlocks.TANK_ENTITY);
 
 			if (tankEntity.isPresent())
 			{
@@ -1097,7 +1055,7 @@ public class ValveBlockEntity extends BlockEntity implements IFluidHandler
 	{
 		if (world != null && pos != null)
 		{
-			var tankEntity = world.getBlockEntity(pos, BlocksAndItems.blockEntityTypeTank);
+			var tankEntity = world.getBlockEntity(pos, ModBlocks.TANK_ENTITY);
 
 			if (tankEntity.isPresent())
 			{

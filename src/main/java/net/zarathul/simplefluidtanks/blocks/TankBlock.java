@@ -2,7 +2,6 @@ package net.zarathul.simplefluidtanks.blocks;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -17,7 +16,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.PushReaction;
-import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.TankBlockEntity;
@@ -34,10 +32,9 @@ public class TankBlock extends WrenchableBlock
 	public static final BooleanProperty WAS_WRENCHED = BooleanProperty.create("was_wrenched");
 	public static final BooleanProperty RERENDER_TRIGGER = BooleanProperty.create("rerender_trigger");
 
-	public TankBlock(ResourceKey<Block> id)
+	public TankBlock(Properties properties)
 	{
-		super(Block.Properties.of()
-			.setId(id)
+		super(properties
 			.strength(Settings.tankBlockDestructionTime(), Settings.tankBlockResistance())
 			.sound(SoundType.GLASS)
 			.noOcclusion()
@@ -101,7 +98,7 @@ public class TankBlock extends WrenchableBlock
 		// appropriate item, telling the connected valve to rebuild in the process
 		if (player.isCrouching())
 		{
-			var tankEntityOptional = world.getBlockEntity(pos, BlocksAndItems.blockEntityTypeTank);
+			var tankEntityOptional = world.getBlockEntity(pos, ModBlocks.TANK_ENTITY);
 			if (tankEntityOptional.isEmpty())
 			{
 				SimpleFluidTanks.LOG.error("Missing TankBlockEntity at {}.", pos.toShortString());
@@ -136,7 +133,7 @@ public class TankBlock extends WrenchableBlock
 	@Override
 	protected MapCodec<? extends BaseEntityBlock> codec()
 	{
-		return simpleCodec(props -> new TankBlock(props.blockId()));
+		return simpleCodec(TankBlock::new);
 	}
 
 	private void handleDestruction(Level level, BlockPos pos, BlockState state)

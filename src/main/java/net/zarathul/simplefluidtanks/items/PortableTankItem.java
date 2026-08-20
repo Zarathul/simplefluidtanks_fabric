@@ -4,35 +4,31 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
-import net.zarathul.simplemodslib.SimpleModsLib;
+import net.zarathul.simplemodslib.ModComponents;
 import net.zarathul.simplemodslib.Utils;
 import net.zarathul.simplemodslib.api.fluid.FluidContainerComponent;
 import net.zarathul.simplemodslib.api.fluid.FluidContainerItemBase;
 import net.zarathul.simplemodslib.api.fluid.FluidHelper;
+import net.zarathul.simplemodslib.api.fluid.FluidStack;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
 public class PortableTankItem extends FluidContainerItemBase
 {
-	private static final String TOOLTIP_KEY = "item." + SimpleFluidTanks.MOD_ID + "." + BlocksAndItems.PORTABLE_TANK_ITEM_NAME + ".tooltip";
-	private static final String TOOLTIP_MODE_MAX_KEY = "item." + SimpleFluidTanks.MOD_ID + "." + BlocksAndItems.PORTABLE_TANK_ITEM_NAME + ".tooltip_max";
-	private static final String TOOLTIP_MODE_SINGLE_BUCKET_KEY = "item." + SimpleFluidTanks.MOD_ID + "." + BlocksAndItems.PORTABLE_TANK_ITEM_NAME + ".tooltip_single_bucket";
-	private static final String TOOLTIP_DETAILS_KEY = "item." + SimpleFluidTanks.MOD_ID + "." + BlocksAndItems.PORTABLE_TANK_ITEM_NAME + ".tooltip_details";
+	private static final String TOOLTIP_KEY                    = "item." + SimpleFluidTanks.MOD_ID + "." + ModItems.PORTABLE_TANK_NAME + ".tooltip";
+	private static final String TOOLTIP_MODE_MAX_KEY           = "item." + SimpleFluidTanks.MOD_ID + "." + ModItems.PORTABLE_TANK_NAME + ".tooltip_max";
+	private static final String TOOLTIP_MODE_SINGLE_BUCKET_KEY = "item." + SimpleFluidTanks.MOD_ID + "." + ModItems.PORTABLE_TANK_NAME + ".tooltip_single_bucket";
+	private static final String TOOLTIP_DETAILS_KEY            = "item." + SimpleFluidTanks.MOD_ID + "." + ModItems.PORTABLE_TANK_NAME + ".tooltip_details";
 
-	public PortableTankItem(ResourceKey<Item> id, int defaultCapacity)
+	public PortableTankItem(Properties properties)
 	{
-		super(new Item.Properties()
-				.setId(id)
-				.stacksTo(1),
-			defaultCapacity);
+		int defaultCapacity = Settings.bucketsPerPortableTank() * FluidStack.BUCKET_VOLUME;
+		super(properties.stacksTo(1), defaultCapacity);
 	}
 
 	@Environment(EnvType.CLIENT)
@@ -48,7 +44,7 @@ public class PortableTankItem extends FluidContainerItemBase
 		}
 		else
 		{
-			FluidContainerComponent component = stack.get(SimpleModsLib.FLUID_CONTAINER_COMPONENT);
+			FluidContainerComponent component = stack.get(ModComponents.FLUID_CONTAINER_COMPONENT);
 			if (component == null) return;
 
 			String fluidName = FluidHelper.getFluidName(component.fluidId());
@@ -58,8 +54,8 @@ public class PortableTankItem extends FluidContainerItemBase
 				fluidName,
 				(!fluidName.isEmpty()) ? " " : "",	// Insert a space to make the tooltip look nicer, if getting a name was successful.
 				component.fluidId(),
-				Utils.getMetricFormattedNumber(component.amount(), "%.1f", "%d", "B"),
-				Utils.getMetricFormattedNumber(component.capacity(), "%.1f %s%s", "%d %s", "B"),
+				Utils.getMetricFormattedNumber(component.amount() / FluidStack.BUCKET_VOLUME, "%.1f", "%d", "B"),
+				Utils.getMetricFormattedNumber(component.capacity() / FluidStack.BUCKET_VOLUME, "%.1f %s%s", "%d %s", "B"),
 				(component.singleBucketMode()) ? Utils.translate(TOOLTIP_MODE_SINGLE_BUCKET_KEY) : Utils.translate(TOOLTIP_MODE_MAX_KEY))
 			);
 		}

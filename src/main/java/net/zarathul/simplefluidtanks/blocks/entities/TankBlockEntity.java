@@ -15,7 +15,7 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.zarathul.simplefluidtanks.BlocksAndItems;
+import net.zarathul.simplefluidtanks.blocks.ModBlocks;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
 import net.zarathul.simplefluidtanks.blocks.ValveBlock;
 import net.zarathul.simplefluidtanks.rendering.ConnectedTexturesHelper;
@@ -64,7 +64,7 @@ public class TankBlockEntity extends BlockEntity
 	 */
 	public TankBlockEntity(final BlockPos pos, final BlockState state)
 	{
-		super(BlocksAndItems.blockEntityTypeTank, pos, state);
+		super(ModBlocks.TANK_ENTITY, pos, state);
 
 		fillLevel = 0;
 		isPartOfTank = false;
@@ -188,7 +188,7 @@ public class TankBlockEntity extends BlockEntity
 	{
 		if (isPartOfTank() && level != null)
 		{
-			return level.getBlockEntity(valveCoords, BlocksAndItems.blockEntityTypeValve).orElse(null);
+			return level.getBlockEntity(valveCoords, ModBlocks.VALVE_ENTITY).orElse(null);
 		}
 
 		return null;
@@ -205,7 +205,7 @@ public class TankBlockEntity extends BlockEntity
 	{
 		if (isPartOfTank() || valvePos == null || level == null) return false;
 
-		var valveEntity = level.getBlockEntity(valvePos, BlocksAndItems.blockEntityTypeValve);
+		var valveEntity = level.getBlockEntity(valvePos, ModBlocks.VALVE_ENTITY);
 
 		if (valveEntity.isPresent())
 		{
@@ -370,7 +370,7 @@ public class TankBlockEntity extends BlockEntity
 			return false;
 		}
 
-		var connectionCandidate = level.getBlockEntity(checkPos, BlocksAndItems.blockEntityTypeTank);
+		var connectionCandidate = level.getBlockEntity(checkPos, ModBlocks.TANK_ENTITY);
 
 		if (connectionCandidate.isPresent())
 		{
@@ -398,20 +398,6 @@ public class TankBlockEntity extends BlockEntity
 		{
 			setChanged();
 		}
-	}
-
-	/**
-	 * Get the texture index for the specified side.
-	 *
-	 * @param direction
-	 * One of the {@link Direction} values.
-	 * @return
-	 * A texture index provided by {@link ConnectedTexturesHelper}, or <c>-1</c> if there is no texture set for
-	 * the specified side.
-	 */
-	public int getTextureIndex(Direction direction)
-	{
-		return textures[direction.get3DDataValue()];
 	}
 
 	/**

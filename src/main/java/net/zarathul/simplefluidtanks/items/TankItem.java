@@ -4,12 +4,10 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.zarathul.simplefluidtanks.BlocksAndItems;
+import net.minecraft.world.level.block.Block;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.TankBlock;
@@ -24,12 +22,12 @@ import java.util.List;
  */
 public class TankItem extends BlockItem
 {
-	private static final String toolTipKey = "item." + SimpleFluidTanks.MOD_ID + "." + BlocksAndItems.TANK_ITEM_NAME + ".tooltip";
-	private static final String toolTipDetailsKey = "item." + SimpleFluidTanks.MOD_ID + "." + BlocksAndItems.TANK_ITEM_NAME + ".tooltip_details";
+	private static final String TOOLTIP_KEY         = "item." + SimpleFluidTanks.MOD_ID + "." + ModItems.TANK_NAME + ".tooltip";
+	private static final String TOOLTIP_DETAILS_KEY = "item." + SimpleFluidTanks.MOD_ID + "." + ModItems.TANK_NAME + ".tooltip_details";
 
-	public TankItem(ResourceKey<Item> id)
+	public TankItem(Block block, Properties properties)
 	{
-		super(BlocksAndItems.blockTank, new Item.Properties().setId(id).stacksTo(64));
+		super(block, properties.stacksTo(64));
 	}
 
 	@Environment(EnvType.CLIENT)
@@ -41,11 +39,11 @@ public class TankItem extends BlockItem
 
 		if (leftShiftState == GLFW.GLFW_PRESS || rightShiftState == GLFW.GLFW_PRESS)
 		{
-			tooltip.addAll(Utils.multiLineTranslate(toolTipDetailsKey, Settings.bucketsPerTank()));
+			tooltip.addAll(Utils.multiLineTranslate(TOOLTIP_DETAILS_KEY, Settings.bucketsPerTank()));
 		}
 		else
 		{
-			tooltip.add(Component.translatable(toolTipKey));
+			tooltip.add(Component.translatable(TOOLTIP_KEY));
 		}
 	}
 }

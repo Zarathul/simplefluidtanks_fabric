@@ -3,7 +3,6 @@ package net.zarathul.simplefluidtanks.blocks;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -25,7 +24,6 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.BlockHitResult;
-import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.entities.ValveBlockEntity;
@@ -49,10 +47,9 @@ public class ValveBlock extends WrenchableBlock
 	public static final BooleanProperty CONNECTED_WEST = BooleanProperty.create("connected_west");
 	public static final BooleanProperty CONNECTED_EAST = BooleanProperty.create("connected_east");
 
-	public ValveBlock(ResourceKey<Block> id)
+	public ValveBlock(Properties properties)
 	{
-		super(Block.Properties.of()
-			.setId(id)
+		super(properties
 			.strength(Settings.valveBlockDestructionTime(), Settings.valveBlockResistance())
 			.sound(SoundType.METAL)
 			.pushReaction(PushReaction.BLOCK));
@@ -104,7 +101,7 @@ public class ValveBlock extends WrenchableBlock
 	{
 		if (!level.isClientSide())
 		{
-			var valveEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
+			var valveEntity = level.getBlockEntity(pos, ModBlocks.VALVE_ENTITY);
 
 			if (valveEntity.isPresent())
 			{
@@ -124,7 +121,7 @@ public class ValveBlock extends WrenchableBlock
 	{
 		if (!level.isClientSide())
 		{
-			var valveEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
+			var valveEntity = level.getBlockEntity(pos, ModBlocks.VALVE_ENTITY);
 
 			if (valveEntity.isPresent())
 			{
@@ -150,7 +147,7 @@ public class ValveBlock extends WrenchableBlock
 	@Override
 	protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction)
 	{
-		var valveEntityOptional = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
+		var valveEntityOptional = level.getBlockEntity(pos, ModBlocks.VALVE_ENTITY);
 
 		if (valveEntityOptional.isPresent())
 		{
@@ -185,7 +182,7 @@ public class ValveBlock extends WrenchableBlock
 	{
 		// On sneak use: disband the multiblock | On use: rebuild the multiblock
 
-		var valveEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
+		var valveEntity = level.getBlockEntity(pos, ModBlocks.VALVE_ENTITY);
 
 		if (valveEntity.isEmpty())
 		{
@@ -208,14 +205,14 @@ public class ValveBlock extends WrenchableBlock
 	@Override
 	protected MapCodec<? extends BaseEntityBlock> codec()
 	{
-		return simpleCodec(props -> new ValveBlock(props.blockId()));
+		return simpleCodec(ValveBlock::new);
 	}
 
 	private void handleDestruction(Level level, BlockPos pos, BlockState state)
 	{
 		if (!level.isClientSide())
 		{
-			var valveEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeValve);
+			var valveEntity = level.getBlockEntity(pos, ModBlocks.VALVE_ENTITY);
 
 			if (valveEntity.isEmpty())
 			{

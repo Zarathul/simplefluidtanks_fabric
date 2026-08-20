@@ -19,8 +19,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
-import net.zarathul.simplefluidtanks.BlocksAndItems;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
+import net.zarathul.simplefluidtanks.blocks.ModBlocks;
 import net.zarathul.simplefluidtanks.blocks.entities.TankBlockEntity;
 import net.zarathul.simplemodslib.api.fluid.FluidHelper;
 import org.jspecify.annotations.Nullable;
@@ -92,7 +92,7 @@ public class TankBlockStateModel extends WrapperBlockStateModel
 	{
 		if (tankSprites == null) init();
 
-		var optionalTankBlockEntity = level.getBlockEntity(pos, BlocksAndItems.blockEntityTypeTank);
+		var optionalTankBlockEntity = level.getBlockEntity(pos, ModBlocks.TANK_ENTITY);
 		if (optionalTankBlockEntity.isEmpty() || !optionalTankBlockEntity.get().isPartOfTank())
 		{
 			emitEmptyUnconnectedTank(emitter);
@@ -116,7 +116,7 @@ public class TankBlockStateModel extends WrapperBlockStateModel
 			int fillLevel = tankBlockEntity.getFillLevel();
 			float fillLevelFactor = Math.min((float)fillLevel / TankBlockEntity.FILL_LEVELS, 1f);
 
-			var tankBlockEntityAbove = level.getBlockEntity(pos.above(), BlocksAndItems.blockEntityTypeTank);
+			var tankBlockEntityAbove = level.getBlockEntity(pos.above(), ModBlocks.TANK_ENTITY);
 			boolean cullFluidTop = (tankBlockEntityAbove.isPresent() && (tankBlockEntity.isPartOfSameTank(tankBlockEntityAbove.get())) && (tankBlockEntityAbove.get().getFillLevel() > 0));
 			final float epsilon = 0.00001f;		// TODO: Apply epsilon only to sides with frame on top to avoid the tiny blank line in between blocks
 
