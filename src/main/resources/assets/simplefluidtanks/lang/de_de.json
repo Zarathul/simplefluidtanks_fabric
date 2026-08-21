@@ -6,7 +6,7 @@
 	"_comment": "Items",
 	"item.simplefluidtanks.tank": "Flüssigkeitstank",
 	"item.simplefluidtanks.tank.tooltip": "§e§oUmschalten §7gedrückt halten für Details.",
-	"item.simplefluidtanks.tank.tooltip_details": "Halte §bSchleichen und benutze den §bSchraubenschlüssel§r um Tanks aus der Multiblock Konstruktion zu entfernen.\n§9Nimmt §9bis §9zu §b%d §9Eimer §9Flüssigkeit §9auf.",
+	"item.simplefluidtanks.tank.tooltip_details": "Halte §bSchleichen§r und benutze den §bSchraubenschlüssel§r um Tanks aus der Multiblock Konstruktion zu entfernen.\n§9Nimmt §9bis §9zu §b%d §9Eimer §9Flüssigkeit §9auf.",
 	"item.simplefluidtanks.valve": "Ventil",
 	"item.simplefluidtanks.valve.tooltip": "§e§oUmschalten §7gedrückt halten für Details.",
 	"item.simplefluidtanks.valve.tooltip_details": "Benutze den §bSchraubenschlüssel§r mit dem Ventil um der Multiblock Konstruktion neue §bTank§r Blöcke hinzuzufügen, ohne Flüssigkeit zu verlieren. Beachte dass, das Ventil, was die Gesamtkapazität angeht, als §bTank§r zählt und zusammen mit einem §bKomparator§r ein Redstone Signal abgibt.",

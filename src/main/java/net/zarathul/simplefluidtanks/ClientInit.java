@@ -46,6 +46,11 @@ public class ClientInit implements ClientModInitializer
 			String TOOLTIP_KEY;
 			String TOOLTIP_DETAILS_KEY;
 			Object[] formattingArgs = {};
+			var mc = Minecraft.getInstance();
+			long windowHandle = mc.getWindow().handle();
+			int leftShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_LEFT_SHIFT);
+			int rightShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_RIGHT_SHIFT);
+			boolean isShiftPressed = (leftShiftState == GLFW.GLFW_PRESS || rightShiftState == GLFW.GLFW_PRESS);
 
 			if (stack.getItem() == ModItems.VALVE)
 			{
@@ -68,37 +73,39 @@ public class ClientInit implements ClientModInitializer
 				TOOLTIP_KEY = PORTABLE_TANK_TOOLTIP_KEY;
 				TOOLTIP_DETAILS_KEY = PORTABLE_TANK_TOOLTIP_DETAILS_KEY;
 
-				FluidContainerComponent component = stack.get(ModComponents.FLUID_CONTAINER_COMPONENT);
-				if (component == null) return;
+				if (isShiftPressed)
+				{
+					formattingArgs = new Object[]{Settings.bucketsPerPortableTank()};
+				}
+				else
+				{
+					FluidContainerComponent component = stack.get(ModComponents.FLUID_CONTAINER_COMPONENT);
+					if (component == null) return;
 
-				String fluidName = FluidHelper.getFluidName(component.fluidId());
-				formattingArgs = new Object[] {
-					fluidName,
-					(!fluidName.isEmpty()) ? " " : "",	// Insert a space to make the tooltip look nicer, if getting a name was successful.
-					component.fluidId(),
-					Utils.getMetricFormattedNumber(component.amount() / FluidStack.BUCKET_VOLUME, "%.1f", "%d", "B"),
-					Utils.getMetricFormattedNumber(component.capacity() / FluidStack.BUCKET_VOLUME, "%.1f %s%s", "%d %s", "B"),
-					(component.singleBucketMode()) ? Utils.translate(PORTABLE_TANK_TOOLTIP_MODE_SINGLE_BUCKET_KEY) : Utils.translate(PORTABLE_TANK_TOOLTIP_MODE_MAX_KEY)
-				};
+					String fluidName = FluidHelper.getFluidName(component.fluidId());
+					formattingArgs = new Object[] {
+						fluidName,
+						(!fluidName.isEmpty()) ? " " : "",	// Insert a space to make the tooltip look nicer, if getting a name was successful.
+						component.fluidId(),
+						Utils.getMetricFormattedNumber(component.amount() / FluidStack.BUCKET_VOLUME, "%.1f", "%d", "B"),
+						Utils.getMetricFormattedNumber(component.capacity() / FluidStack.BUCKET_VOLUME, "%.1f %s%s", "%d %s", "B"),
+						(component.singleBucketMode()) ? Utils.translate(PORTABLE_TANK_TOOLTIP_MODE_SINGLE_BUCKET_KEY) : Utils.translate(PORTABLE_TANK_TOOLTIP_MODE_MAX_KEY)
+					};
+				}
 			}
 			else
 			{
 				return;
 			}
 
-			var mc = Minecraft.getInstance();
-			long windowHandle = mc.getWindow().handle();
-			int leftShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_LEFT_SHIFT);
-			int rightShiftState = GLFW.glfwGetKey(windowHandle, GLFW.GLFW_KEY_RIGHT_SHIFT);
-
-			if (leftShiftState == GLFW.GLFW_PRESS || rightShiftState == GLFW.GLFW_PRESS)
+			if (isShiftPressed)
 			{
 				int maxWidth = mc.getWindow().getGuiScaledWidth() / 3;
 				lines.addAll(Utils.multiLineTranslateWithMaxWidth(TOOLTIP_DETAILS_KEY, maxWidth, formattingArgs));
 			}
 			else
 			{
-				lines.add(Component.translatable(TOOLTIP_KEY));
+				lines.addAll(Utils.multiLineTranslate(TOOLTIP_KEY, formattingArgs));
 			}
 		});
 	}
