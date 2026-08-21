@@ -1,5 +1,6 @@
 package net.zarathul.simplefluidtanks.items;
 
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.ModBlocks;
@@ -17,9 +18,9 @@ public final class ModItems
 	public static final String WRENCH_NAME = "wrench";
 	public static final String PORTABLE_TANK_NAME = "portable_tank";
 
-	public static final TankItem TANK = REGISTRAR.register(TANK_NAME, ModBlocks.TANK, TankItem::new);
-	public static final ValveItem VALVE = REGISTRAR.register(VALVE_NAME, ModBlocks.VALVE, ValveItem::new);
-	public static final WrenchItem WRENCH = REGISTRAR.register(WRENCH_NAME, WrenchItem::new);
+	public static final BlockItem TANK = REGISTRAR.register(TANK_NAME, ModBlocks.TANK, BlockItem::new, new Item.Properties().stacksTo(64));
+	public static final BlockItem VALVE = REGISTRAR.register(VALVE_NAME, ModBlocks.VALVE, BlockItem::new, new Item.Properties().stacksTo(64));
+	public static final Item WRENCH = REGISTRAR.register(WRENCH_NAME, Item::new, new Item.Properties().stacksTo(1));
 	public static final PortableTankItem PORTABLE_TANK = REGISTRAR.register(PORTABLE_TANK_NAME, PortableTankItem::new);
 
 	public static void init()
