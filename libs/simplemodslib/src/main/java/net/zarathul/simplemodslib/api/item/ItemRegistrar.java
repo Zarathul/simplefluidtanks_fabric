@@ -12,6 +12,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.zarathul.simplemodslib.Utils;
 import org.lwjgl.glfw.GLFW;
@@ -33,16 +34,32 @@ public class ItemRegistrar
 		this.modId = modId;
 	}
 
-	public <T extends Item> T register(String name, Function<Item.Properties, Item> factory)
+	public <T extends Item> T register(String name, Function<Item.Properties, T> factory)
 	{
-		return register(name, factory, new Item.Properties());
+		return register(name, factory, new Item.Properties(), null, null);
 	}
 
-	public <T extends Item> T register(String name, Function<Item.Properties, Item> factory, Item.Properties properties)
+	public <T extends Item> T register(String name, Function<Item.Properties, T> factory, Function<ItemStack, Object[]> tooltipFormatArgsGetter, Function<ItemStack, Object[]> tooltipDetailsFormatArgsGetter)
+	{
+		return register(name, factory, new Item.Properties(), tooltipFormatArgsGetter, tooltipDetailsFormatArgsGetter);
+	}
+
+	public <T extends Item> T register(String name, Function<Item.Properties, T> factory, Item.Properties properties)
+	{
+		return register(name, factory, properties, null, null);
+	}
+
+	public <T extends Item> T register(
+		String name,
+		Function<Item.Properties, T> factory,
+		Item.Properties properties,
+		Function<ItemStack, Object[]> tooltipFormatArgsGetter,
+		Function<ItemStack, Object[]> tooltipDetailsFormatArgsGetter
+	)
 	{
 		Identifier id = Identifier.fromNamespaceAndPath(modId, name);
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, id);
-		TooltipKeys tooltipKeys = new TooltipKeys(String.format(TOOLTIP_KEY_FORMAT, modId, name), String.format(TOOLTIP_DETAILS_KEY_FORMAT, modId, name));
+		TooltipKeys tooltipKeys = new TooltipKeys(String.format(TOOLTIP_KEY_FORMAT, modId, name), String.format(TOOLTIP_DETAILS_KEY_FORMAT, modId, name), tooltipFormatArgsGetter, tooltipDetailsFormatArgsGetter);
 
 		T item = (T)Registry.register(BuiltInRegistries.ITEM, id, factory.apply(properties.setId(key)));
 		TOOLTIP_KEYS.put(item, tooltipKeys);
@@ -50,16 +67,33 @@ public class ItemRegistrar
 		return item;
 	}
 
-	public <T extends BlockItem> T register(String name, Block block, BiFunction<Block, Item.Properties, BlockItem> factory)
+	public <T extends BlockItem> T register(String name, Block block, BiFunction<Block, Item.Properties, T> factory)
 	{
-		return register(name, block, factory, new Item.Properties());
+		return register(name, block, factory, new Item.Properties(), null, null);
 	}
 
-	public <T extends BlockItem> T register(String name, Block block, BiFunction<Block, Item.Properties, BlockItem> factory, Item.Properties properties)
+	public <T extends BlockItem> T register(String name, Block block, BiFunction<Block, Item.Properties, T> factory, Function<ItemStack, Object[]> tooltipFormatArgsGetter, Function<ItemStack, Object[]> tooltipDetailsFormatArgsGetter)
+	{
+		return register(name, block, factory, new Item.Properties(), tooltipFormatArgsGetter, tooltipDetailsFormatArgsGetter);
+	}
+
+	public <T extends BlockItem> T register(String name, Block block, BiFunction<Block, Item.Properties, T> factory, Item.Properties properties)
+	{
+		return register(name, block, factory, properties, null, null);
+	}
+
+	public <T extends BlockItem> T register(
+		String name,
+		Block block,
+		BiFunction<Block, Item.Properties, T> factory,
+		Item.Properties properties,
+		Function<ItemStack, Object[]> tooltipFormatArgsGetter,
+		Function<ItemStack, Object[]> tooltipDetailsFormatArgsGetter
+	)
 	{
 		Identifier id = Identifier.fromNamespaceAndPath(modId, name);
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, id);
-		TooltipKeys tooltipKeys = new TooltipKeys(String.format(TOOLTIP_KEY_FORMAT, modId, name), String.format(TOOLTIP_DETAILS_KEY_FORMAT, modId, name));
+		TooltipKeys tooltipKeys = new TooltipKeys(String.format(TOOLTIP_KEY_FORMAT, modId, name), String.format(TOOLTIP_DETAILS_KEY_FORMAT, modId, name), tooltipFormatArgsGetter, tooltipDetailsFormatArgsGetter);
 
 		T item = (T)Registry.register(BuiltInRegistries.ITEM, id, factory.apply(block, properties.setId(key)));
 		TOOLTIP_KEYS.put(item, tooltipKeys);
@@ -81,14 +115,25 @@ public class ItemRegistrar
 
 			if (isShiftPressed)
 			{
-				lines.addAll(Utils.multiLineTranslateWithMaxWidth(keys.detailsKey(), maxWidth));
+				lines.addAll(Utils.multiLineTranslateWithMaxWidth(keys.detailsKey(), maxWidth, keys.getFormatArgs(stack)));
 			}
 			else
 			{
-				lines.add(Component.literal(Utils.translate(keys.key())));
+				lines.add(Component.literal(Utils.translate(keys.key(), keys.getDetailsFormatArgs(stack))));
 			}
 		});
 	}
 
-	private record TooltipKeys(String key, String detailsKey) {}
+	private record TooltipKeys(String key, String detailsKey, Function<ItemStack, Object[]> formatArgsGetter, Function<ItemStack, Object[]> detailsFormatArgsGetter)
+	{
+		public Object[] getFormatArgs(ItemStack stack)
+		{
+			return (formatArgsGetter != null) ? formatArgsGetter.apply(stack) : new Object[0];
+		}
+
+		public Object[] getDetailsFormatArgs(ItemStack stack)
+		{
+			return (detailsFormatArgsGetter != null) ? detailsFormatArgsGetter.apply(stack) : new Object[0];
+		}
+	}
 }
