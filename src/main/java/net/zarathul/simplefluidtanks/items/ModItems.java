@@ -2,9 +2,15 @@ package net.zarathul.simplefluidtanks.items;
 
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.zarathul.simplefluidtanks.Settings;
 import net.zarathul.simplefluidtanks.SimpleFluidTanks;
 import net.zarathul.simplefluidtanks.blocks.ModBlocks;
+import net.zarathul.simplemodslib.ModComponents;
 import net.zarathul.simplemodslib.SimpleModsLib;
+import net.zarathul.simplemodslib.Utils;
+import net.zarathul.simplemodslib.api.fluid.FluidContainerComponent;
+import net.zarathul.simplemodslib.api.fluid.FluidHelper;
+import net.zarathul.simplemodslib.api.fluid.FluidStack;
 import net.zarathul.simplemodslib.api.item.ItemRegistrar;
 
 import java.util.Collections;
@@ -13,15 +19,28 @@ public final class ModItems
 {
 	private static final ItemRegistrar REGISTRAR = new ItemRegistrar(SimpleFluidTanks.MOD_ID);
 
-	public static final String TANK_NAME = "tank";
-	public static final String VALVE_NAME = "valve";
-	public static final String WRENCH_NAME = "wrench";
-	public static final String PORTABLE_TANK_NAME = "portable_tank";
+	public static final BlockItem TANK = REGISTRAR.register("tank", ModBlocks.TANK, BlockItem::new, new Item.Properties().stacksTo(64), null, _ -> new Object[] { Settings.bucketsPerTank() });
+	public static final BlockItem VALVE = REGISTRAR.register("valve", ModBlocks.VALVE, BlockItem::new, new Item.Properties().stacksTo(64));
+	public static final Item WRENCH = REGISTRAR.register("wrench", Item::new, new Item.Properties().stacksTo(1));
+	public static final PortableTankItem PORTABLE_TANK = REGISTRAR.register(
+		"portable_tank",
+		PortableTankItem::new,
+		itemStack -> {
+			FluidContainerComponent component = itemStack.get(ModComponents.FLUID_CONTAINER_COMPONENT);
+			if (component == null) return new Object[0];
 
-	public static final BlockItem TANK = REGISTRAR.register(TANK_NAME, ModBlocks.TANK, BlockItem::new, new Item.Properties().stacksTo(64));
-	public static final BlockItem VALVE = REGISTRAR.register(VALVE_NAME, ModBlocks.VALVE, BlockItem::new, new Item.Properties().stacksTo(64));
-	public static final Item WRENCH = REGISTRAR.register(WRENCH_NAME, Item::new, new Item.Properties().stacksTo(1));
-	public static final PortableTankItem PORTABLE_TANK = REGISTRAR.register(PORTABLE_TANK_NAME, PortableTankItem::new);
+			String fluidName = FluidHelper.getFluidName(component.fluidId());
+			return new Object[] {
+				fluidName,
+				(!fluidName.isEmpty()) ? " " : "",	// Insert a space to make the tooltip look nicer, if getting a name was successful.
+				component.fluidId(),
+				Utils.getMetricFormattedNumber(component.amount() / FluidStack.BUCKET_VOLUME, "%.1f", "%d", "B"),
+				Utils.getMetricFormattedNumber(component.capacity() / FluidStack.BUCKET_VOLUME, "%.1f %s%s", "%d %s", "B"),
+				(component.singleBucketMode()) ? Utils.translate("item.simplefluidtanks.portable_tank.tooltip_single_bucket") : Utils.translate("item.simplefluidtanks.portable_tank.tooltip_max")
+			};
+		},
+		_ -> new Object[] { Settings.bucketsPerPortableTank() }
+	);
 
 	public static void init()
 	{
@@ -33,6 +52,11 @@ public final class ModItems
 			WRENCH,
 			PORTABLE_TANK
 		);
+	}
+
+	public static void registerTooltips()
+	{
+		REGISTRAR.registerTooltips();
 	}
 
 	/**
