@@ -115,11 +115,11 @@ public class ItemRegistrar
 
 			if (isShiftPressed)
 			{
-				lines.addAll(Utils.multiLineTranslateWithMaxWidth(keys.detailsKey(), maxWidth, keys.getFormatArgs(stack)));
+				lines.addAll(Utils.multiLineTranslateWithMaxWidth(keys.detailsKey(), maxWidth, keys.getDetailsFormatArgs(stack)));
 			}
 			else
 			{
-				lines.add(Component.literal(Utils.translate(keys.key(), keys.getDetailsFormatArgs(stack))));
+				lines.addAll(Utils.multiLineTranslate(keys.key(), keys.getFormatArgs(stack)));
 			}
 		});
 	}
